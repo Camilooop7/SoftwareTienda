@@ -1,0 +1,35 @@
+{% extends 'index.html' %}
+{% block titulo %}Roles y permisos{% endblock %}
+{% block mod_gestion %}activo{% endblock %}
+{% block menu_roles %}activo{% endblock %}
+{% block encabezado %}Roles y permisos{% endblock %}
+
+{% block contenido %}
+<div class="fichas">
+
+    <div class="ficha ficha--violeta">
+        <span class="valor">{{ roles|length }}</span>
+        <span class="etiqueta">Roles registrados</span>
+    </div>
+
+</div>
+
+<table>
+    <tr>
+        <th>Rol</th>
+        <th>Permisos</th>
+        <th style="text-align:right;">Acción</th>
+    </tr>
+    {% for item in roles %}
+    <tr>
+        <td><strong>{{ item.grupo.name }}</strong></td>
+        <td>{{ item.descripcion }}</td>
+        <td style="text-align:right;">
+            <a href="{% url 'rol_editar' item.grupo.pk %}" class="btn btn-linea">Editar</a>
+        </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="3">No hay roles registrados.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

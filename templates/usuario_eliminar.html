@@ -1,0 +1,14 @@
+{% extends 'index.html' %}
+{% block titulo %}Eliminar usuario{% endblock %}
+{% block encabezado %}¿Eliminar a {{ object.username }}?{% endblock %}
+
+{% block contenido %}
+<div class="form">
+    <p style="color:#c62828;">Esta acción no se puede deshacer.</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-rojo">Sí, eliminar</button>
+        <a class="btn btn-linea" href="{% url 'usuario_usuarios' %}">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

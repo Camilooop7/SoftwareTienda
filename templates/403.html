@@ -1,0 +1,10 @@
+{% extends 'index.html' %}
+{% block titulo %}Acceso denegado{% endblock %}
+{% block encabezado %}Acceso denegado{% endblock %}
+{% block contenido %}
+<div class="form">
+    <h2>No tienes permisos para esta sección.</h2>
+    <p>No cuenta con permisos para gestionar usuarios.</p>
+    <a class="btn btn-morado" href="{% url 'perfil_actual' %}">Volver a mi perfil</a>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends 'index.html' %}
+{% block mod_gestion %}activo{% endblock %}
+{% block titulo %}Usuarios{% endblock %}
+{% block menu_usuarios %}activo{% endblock %}
+{% block encabezado %}Usuarios{% endblock %}
+
+{% block contenido %}
+<div class="acciones-barra">
+    <a class="btn btn-morado" href="{% url 'usuario_crear' %}"> AGREGAR USUARIO</a>
+</div>
+
+<table>
+    <tr>
+        <th>Correo electrónico</th>
+        <th>Nombre</th>
+        <th>Identificación</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+    </tr>
+    {% for u in usuarios %}
+    <tr>
+        <td>{{ u.email }}</td>
+        <td>{{ u.get_full_name|default:u.username }}</td>
+        <td>{{ u.identificacion }}</td>
+        <td>{{ u.groups.all.0|default:"Sin rol" }}</td>
+        <td>{{ u.estado }}</td>
+        <td>
+            <a class="btn btn-linea" href="{% url 'usuario_perfil' u.pk %}">Ver</a>
+            <a class="btn btn-linea" href="{% url 'usuario_actualizar' u.pk %}">EDITAR</a>
+            <a class="btn btn-rojo" href="{% url 'usuario_eliminar' u.pk %}">Eliminar</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

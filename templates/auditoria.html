@@ -1,0 +1,81 @@
+{% extends 'index.html' %}
+{% block titulo %}Auditoría{% endblock %}
+{% block mod_gestion %}activo{% endblock %}
+{% block menu_auditoria %}activo{% endblock %}
+{% block encabezado %}Auditoría del sistema{% endblock %}
+
+{% block contenido %}
+
+<form method="get" class="filtros-auditoria">
+
+    <div class="filtro filtro--fecha">
+        <span class="filtro-titulo">Fecha</span>
+        <input type="date" name="fecha" value="{{ filtros.fecha }}">
+    </div>
+
+    <div class="filtro filtro--accion">
+        <span class="filtro-titulo">Acción</span>
+        <select name="accion">
+            <option value="">Todas</option>
+            {% for valor, nombre in acciones %}
+                <option value="{{ valor }}" {% if filtros.accion == valor %}selected{% endif %}>
+                    {{ nombre }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="filtro filtro--usuario">
+        <span class="filtro-titulo">Usuario</span>
+        <select name="usuario">
+            <option value="">Todos</option>
+            {% for u in usuarios %}
+                <option value="{{ u.pk }}" {% if filtros.usuario == u.pk %}selected{% endif %}>
+                    {{ u.get_full_name|default:u.username }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="filtros-acciones">
+        <button type="submit" class="btn btn-morado">Filtrar</button>
+        <a href="{% url 'auditoria' %}" class="btn btn-linea">Limpiar</a>
+    </div>
+
+</form>
+
+<table>
+    <tr>
+        <th>Fecha</th>
+        <th>Hora</th>
+        <th>Usuario</th>
+        <th>Acción</th>
+        <th>Detalle</th>
+    </tr>
+    {% for r in registros %}
+    <tr>
+        <td>{{ r.fecha|date:"d/m/Y" }}</td>
+        <td>{{ r.hora|time:"H:i" }}</td>
+        <td>{{ r.usuario.username|default:"—" }}</td>
+        <td>{{ r.get_accion_display }}</td>
+        <td>{{ r.detalle }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="5">No hay registros con esos filtros.</td></tr>
+    {% endfor %}
+</table>
+
+{% if page_obj.has_previous or page_obj.has_next %}
+<div class="acciones-barra" style="justify-content:center;">
+    {% if page_obj.has_previous %}
+        <a class="btn btn-linea" href="?{% for k, v in filtros.items %}{% if v %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">← Anterior</a>
+    {% endif %}
+    <span style="align-self:center; color:#64748B; font-size:13px;">
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+    </span>
+    {% if page_obj.has_next %}
+        <a class="btn btn-linea" href="?{% for k, v in filtros.items %}{% if v %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">Siguiente →</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends 'index.html' %}
+{% block titulo %}Mi perfil{% endblock %}
+{% block mod_gestion %}activo{% endblock %}
+{% block menu_perfil %}activo{% endblock %}
+{% block encabezado %}¡Hola, {{ usuario.get_full_name|default:usuario.username }}!{% endblock %}
+
+{% block contenido %}
+<div class="fichas">
+
+    <div class="ficha ficha--rosa">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32">
+            <path fill="none" d="M0 0h24v24H0z"></path>
+            <path d="M12 22a9.956 9.956 0 0 0 6.664-2.544C18.208 16.639 15.316 15 12 15s-6.209 1.638-6.664 4.456A9.956 9.956 0 0 0 12 22zM12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" fill="#EC4899"></path>
+        </svg>
+        <div class="valor">{{ usuario.first_name }} {{ usuario.last_name }}</div>
+        <div class="etiqueta">Nombre completo</div>
+    </div>
+
+    <div class="ficha ficha--rosa">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32">
+            <path fill="none" d="M0 0h24v24H0z"></path>
+            <path d="M20 3H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM4 5h16v14H4V5zm3 3h4v4H7V8zm0 6h4v2H7v-2zm6-6h4v2h-4V8zm0 4h4v2h-4v-2zm0 4h4v2h-4v-2z" fill="#EC4899"></path>
+        </svg>
+        <div class="valor">{{ usuario.identificacion }}</div>
+        <div class="etiqueta">Identificación</div>
+    </div>
+
+    <div class="ficha ficha--rosa">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32">
+            <path fill="none" d="M0 0h24v24H0z"></path>
+            <path d="M1.5 8.67v8.58a3 3 0 0 0 3 3h15a3 3 0 0 0 3-3V8.67l-8.928 5.493a3 3 0 0 1-3.144 0L1.5 8.67Z" fill="#06B6D4"></path>
+            <path d="M22.5 6.908V6.75a3 3 0 0 0-3-3h-15a3 3 0 0 0-3 3v.158l9.714 5.978a1.5 1.5 0 0 0 1.572 0L22.5 6.908Z" fill="#06B6D4"></path>
+        </svg>
+        <div class="valor">{{ usuario.email }}</div>
+        <div class="etiqueta">Correo electrónico</div>
+    </div>
+
+    <div class="ficha ficha--rosa">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32">
+            <path fill="none" d="M0 0h24v24H0z"></path>
+            <path d="M12 20h8v2h-8C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10a9.956 9.956 0 0 1-2 6h-2.708A8 8 0 1 0 12 20zm0-10a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm-4 4a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm8 0a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm-4 4a2 2 0 1 1 0-4 2 2 0 0 1 0 4z" fill="#8B5CF6"></path>
+        </svg>
+        <div class="valor">{{ usuario.groups.all.0|default:"Sin rol" }}</div>
+        <div class="etiqueta">Rol</div>
+    </div>
+
+</div>
+
+<div class="fichas">
+
+    <div class="ficha ficha--cian">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32">
+            <path fill="none" d="M0 0h24v24H0z"></path>
+            <path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0-8a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm0 10c-4.418 0-8 2.239-8 5v3h16v-3c0-2.761-3.582-5-8-5zm-6 6v-1c0-1.657 2.686-3 6-3s6 1.343 6 3v1H6z" fill="#0F172A"></path>
+        </svg>
+        <div class="valor">{{ usuario.username }}</div>
+        <div class="etiqueta">Usuario</div>
+    </div>
+
+    <div class="ficha ficha--cian">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32">
+            <path fill="none" d="M0 0h24v24H0z"></path>
+            <path d="M19 4h-1V2h-2v2H8V2H6v2H5a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3zm1 15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9h16v9zm0-11H4V7a1 1 0 0 1 1-1h1v2h2V6h8v2h2V6h1a1 1 0 0 1 1 1v1zM6 12h3v3H6v-3zm5 0h3v3h-3v-3zm5 0h2v3h-2v-3z" fill="#0F172A"></path>
+        </svg>
+        <div class="valor">{{ usuario.fecha_ingreso|date:"d/m/Y" }}</div>
+        <div class="etiqueta">Fecha de ingreso</div>
+    </div>
+
+    <div class="ficha ficha--cian">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32">
+            <path fill="none" d="M0 0h24v24H0z"></path>
+            <path d="M12 1a5 5 0 0 1 5 5v3h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h1V6a5 5 0 0 1 5-5zm0 2a3 3 0 0 0-3 3v3h6V6a3 3 0 0 0-3-3zm0 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4z" fill="#06B6D4"></path>
+        </svg>
+        <div class="valor">{{ usuario.get_estado_display }}</div>
+        <div class="etiqueta">Estado de la cuenta</div>
+    </div>
+
+</div>
+
+<div class="acciones-barra">
+    <a class="btn btn-morado" href="{% url 'usuario_actualizar' usuario.pk %}">Editar</a>
+</div>
+{% endblock %}

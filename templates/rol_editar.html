@@ -1,0 +1,33 @@
+{% extends 'index.html' %}
+{% block titulo %}Editar rol{% endblock %}
+{% block mod_gestion %}activo{% endblock %}
+{% block menu_roles %}activo{% endblock %}
+{% block encabezado %}Editar rol{% endblock %}
+
+{% block contenido %}
+<form method="post" class="form" style="max-width:720px;">
+    {% csrf_token %}
+    {{ form.media }}
+
+    <p>
+        <label>{{ form.name.label }}</label>
+        {{ form.name }}
+    </p>
+    {% if form.name.errors %}
+    <ul class="errores">{% for e in form.name.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+    {% endif %}
+
+    <p>
+        <label>Permisos disponibles</label>
+        {{ form.permissions }}
+    </p>
+    {% if form.permissions.errors %}
+    <ul class="errores">{% for e in form.permissions.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+    {% endif %}
+
+    <div class="acciones-barra" style="margin-top:22px;">
+        <button type="submit" class="btn btn-morado">Guardar</button>
+        <a href="{% url 'roles' %}" class="btn btn-linea">Cancelar</a>
+    </div>
+</form>
+{% endblock %}

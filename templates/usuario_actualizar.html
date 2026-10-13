@@ -1,0 +1,19 @@
+{% extends 'index.html' %}
+{% block titulo %}Usuario{% endblock %}
+{% block mod_gestion %}activo{% endblock %}
+{% block menu_usuarios %}activo{% endblock %}
+{% block encabezado %}Gestión de usuarios{% endblock %}
+{% block contenido %}
+<form method="post" class="form-capsula">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {{ form.as_p }}
+    <button type="submit" class="button-submit">
+        Guardar
+    </button>
+    <a href="{% url 'usuario_usuarios' %}" class="p">
+        Volver a la lista
+    </a>
+</form>
+{% endblock %}
+

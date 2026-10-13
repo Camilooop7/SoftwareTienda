@@ -1,0 +1,98 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block titulo %}Sistema Tienda Femenina{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'index.css' %}">
+</head>
+
+<body>
+
+    <nav class="sidebar">
+
+        <div class="logo">
+            <img src="{% static 'logo.svg' %}" alt="Logo" class="logo-img">
+            <div>Sistema comercial</div>
+        </div>
+
+        <div class="nav-titulo">Módulos</div>
+
+        <div class="modulo {% block mod_gestion %}{% endblock %}">
+            <button type="button" class="modulo-cabecera">
+                <span class="modulo-icono"></span>
+                <span>Gestión de usuarios</span>
+                <span class="flecha">▾</span>
+            </button>
+
+            <div class="modulo-opciones">
+                <a href="{% url 'perfil_actual' %}" class="{% block menu_perfil %}{% endblock %}">Mi perfil</a>
+                <a href="{% url 'usuario_usuarios' %}" class="{% block menu_usuarios %}{% endblock %}">Usuarios</a>
+                <a href="{% url 'roles' %}" class="{% block menu_roles %}{% endblock %}">Roles y permisos</a>
+                <a href="{% url 'auditoria' %}" class="{% block menu_auditoria %}{% endblock %}">Auditoría</a>
+            </div>
+        </div>
+
+        <div class="modulo {% block mod_nomina %}{% endblock %}">
+            <button type="button" class="modulo-cabecera">
+                <span class="modulo-icono"></span>
+                <span>Nómina</span>
+                <span class="flecha">▾</span>
+            </button>
+
+            <div class="modulo-opciones">
+                <a href="#" class="{% block menu_nomina %}{% endblock %}">
+                    Mi nómina
+                </a>
+
+                <a href="#" class="{% block menu_admin_nomina %}{% endblock %}">
+                    Administrar nómina
+                </a>
+            </div>
+        </div>
+
+        <form method="post" action="{% url 'logout' %}" class="logout-form">
+            {% csrf_token %}
+            <button type="submit" class="boton-logout">
+                Cerrar sesión
+            </button>
+        </form>
+
+    </nav>
+
+    <main class="contenido">
+
+        <div class="cabecera">
+
+            <div class="saludo">
+                <h1>{% block encabezado %}{% endblock %}</h1>
+            </div>
+
+            <div class="tarjeta-usuario">
+
+                <div class="avatar">
+                    {{ user.get_full_name|slice:":1"|default:user.username|slice:":1" }}
+                </div>
+
+                <div>
+                    <div class="rol">
+                        {{ user.get_full_name|default:user.username }}
+                    </div>
+
+                    <div class="cargo">
+                    {{ user.obtener_rol|default:"Sin rol" }}
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        {% block contenido %}{% endblock %}
+
+    </main>
+   <script src="{% static 'menu.js' %}"></script>
+</body>
+</html>
+
