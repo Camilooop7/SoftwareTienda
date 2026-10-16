@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block titulo %}Sistema Tienda Femenina{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'index.css' %}">
+
 </head>
 
 <body>
@@ -42,13 +43,13 @@
             </button>
 
             <div class="modulo-opciones">
-                <a href="#" class="{% block menu_nomina %}{% endblock %}">
-                    Mi nómina
-                </a>
-
-                <a href="#" class="{% block menu_admin_nomina %}{% endblock %}">
-                    Administrar nómina
-                </a>
+                <a href="{% url 'nomina_consultar' %}" class="{% block menu_consultar %}{% endblock %}">Consultar nómina</a>
+                <a href="{% url 'nomina_historial' %}" class="{% block menu_historial %}{% endblock %}">Historial</a>
+                <a href="{% url 'vacaciones' %}" class="{% block menu_vacaciones %}{% endblock %}">Vacaciones</a>
+                <a href="{% url 'horas_extra' %}" class="{% block menu_horas %}{% endblock %}">Horas extra</a>
+                <a href="{% url 'bonificaciones' %}" class="{% block menu_bonificaciones %}{% endblock %}">Bonificaciones</a>
+                <a href="{% url 'calculo_nomina' %}" class="{% block menu_calculo %}{% endblock %}">Cálculo nómina</a>
+                <a href="{% url 'bandeja_aprobacion' %}" class="{% block menu_bandeja %}{% endblock %}">Bandeja de aprobación</a>
             </div>
         </div>
 
@@ -69,6 +70,7 @@
                 <h1>{% block encabezado %}{% endblock %}</h1>
             </div>
 
+
             <div class="tarjeta-usuario">
 
                 <div class="avatar">
@@ -88,11 +90,9 @@
             </div>
 
         </div>
-
         {% block contenido %}{% endblock %}
 
     </main>
    <script src="{% static 'menu.js' %}"></script>
 </body>
 </html>
-

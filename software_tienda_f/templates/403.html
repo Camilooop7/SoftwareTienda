@@ -1,10 +1,14 @@
 {% extends 'index.html' %}
 {% block titulo %}Acceso denegado{% endblock %}
 {% block encabezado %}Acceso denegado{% endblock %}
+
 {% block contenido %}
-<div class="form">
-    <h2>No tienes permisos para esta sección.</h2>
-    <p>No cuenta con permisos para gestionar usuarios.</p>
-    <a class="btn btn-morado" href="{% url 'perfil_actual' %}">Volver a mi perfil</a>
+<div class="pagina-error">
+    <h2>No tienes permisos para esta sección</h2>
+    <p>Tu cuenta no cuenta con los permisos necesarios para acceder aquí.</p>
+    <div class="pagina-error-acciones">
+        <a class="btn btn-morado" href="{% url 'perfil_actual' %}">Volver a mi perfil</a>
+        <a class="btn btn-linea" href="{% url 'nomina_consultar' %}">Ir a mi nómina</a>
+    </div>
 </div>
 {% endblock %}

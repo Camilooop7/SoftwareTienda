@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.messages.context_processors import messages
 from django.urls import reverse_lazy
 from django.core.exceptions import PermissionDenied
 from django.views.generic import (
@@ -21,6 +22,22 @@ class SoloGerenteMixin:
             return redirect_to_login(request.get_full_path(), settings.LOGIN_URL)
         if not request.user.groups.filter(name='Gerente').exists():
             raise PermissionDenied('No tienes permisos para esta acción.')
+        return super().dispatch(request, *args, **kwargs)
+
+
+class SoloAuxiliarMixin(LoginRequiredMixin):
+    """Auxiliar Administrativo: bandeja de aprobación y nómina."""
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.groups.filter(name='Auxiliar Administrativo').exists():
+            raise PermissionDenied('Solo el Auxiliar Administrativo puede acceder.')
+        return super().dispatch(request, *args, **kwargs)
+
+
+class SoloNominaMixin(LoginRequiredMixin):
+    """Los tres roles entran a consultar su nómina propia."""
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.groups.exists():
+            raise PermissionDenied('Necesitas un rol asignado para consultar la nómina.')
         return super().dispatch(request, *args, **kwargs)
 
 
@@ -105,7 +122,6 @@ class UsuarioEliminarView(LoginRequiredMixin, SoloGerenteMixin, DeleteView):
         return respuesta
 
 
-
 @receiver(user_logged_in)
 def auditoria_login(sender, request, user, **kwargs):
     Auditoria.objects.create(
@@ -122,6 +138,7 @@ def auditoria_logout(sender, request, user, **kwargs):
         accion=Auditoria.Accion.SALIR,
         detalle='Cerró sesión',
     )
+
 
 class AuditoriaListView(LoginRequiredMixin, SoloGerenteMixin, ListView):
     model = Auditoria
@@ -186,6 +203,7 @@ class RolListView(LoginRequiredMixin, SoloGerenteMixin, ListView):
             {'grupo': grupo, 'descripcion': descripcion_rol(grupo)}
             for grupo in self.object_list
         ]
+        context['total_usuarios'] = Usuario.objects.filter(groups__isnull=False).distinct().count()
         return context
 
 
@@ -200,6 +218,10 @@ class RolEditarView(LoginRequiredMixin, SoloGerenteMixin, UpdateView):
         Auditoria.objects.create(
             usuario=self.request.user,
             accion=Auditoria.Accion.ACTUALIZAR,
-            detalle='Editó el rol {0}'.format(self.object.name),
+            detalle='Editó el rol {0} (ahora con {1} permisos)'.format(
+                self.object.name,
+                self.object.permissions.count()),
         )
+        messages().success(self.request,
+            'Rol "{0}" actualizado correctamente.'.format(self.object.name))
         return respuesta

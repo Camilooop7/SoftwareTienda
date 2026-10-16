@@ -1,0 +1,60 @@
+{% extends 'index.html' %}
+{% block titulo %}Consultar nómina{% endblock %}
+{% block mod_nomina %}abierto{% endblock %}
+{% block menu_consultar %}activo{% endblock %}
+{% block encabezado %}Consultar nómina{% endblock %}
+
+{% block contenido %}
+<form method="get" class="filtros-auditoria">
+    <div class="filtro filtro--fecha">
+        <span class="filtro-titulo">Período</span>
+        <input type="month" name="periodo" value="{{ periodo }}" required
+               min="2020-01" max="{{ hoy|date:'Y-m' }}">
+    </div>
+    <div class="filtros-acciones">
+        <button type="submit" class="btn btn-morado">Ver período</button>
+        <a href="{% url 'nomina_consultar' %}" class="btn btn-linea">Mes actual</a>
+    </div>
+</form>
+
+<div class="fichas">
+    <div class="ficha ficha--violeta">
+        <span class="valor">${{ nomina.salario_bruto|default:salario_base }}</span>
+        <span class="etiqueta">Salario bruto</span>
+    </div>
+    <div class="ficha ficha--rosa">
+        <span class="valor">${{ nomina.deducciones|default:"0" }}</span>
+        <span class="etiqueta">Deducciones (8%)</span>
+    </div>
+    <div class="ficha ficha--cian">
+        <span class="valor">${{ nomina.total_pagar|default:"—" }}</span>
+        <span class="etiqueta">Total a pagar</span>
+    </div>
+</div>
+
+<h3 style="margin:18px 0 10px;">Solicitar certificado</h3>
+<form method="post" class="form-capsula" style="max-width:100%;">
+    {% csrf_token %}
+    {{ form_solicitud.non_field_errors }}
+    <p><label>Tipo</label>
+        <select name="tipo" id="id_tipo">
+            <option value="CERTIFICADO">Certificado</option>
+        </select>
+    </p>
+    <p><label>Motivo</label> {{ form_solicitud.motivo }}</p>
+    <button type="submit" class="button-submit" style="max-width:240px;">Solicitar</button>
+</form>
+
+<table style="margin-top:24px;">
+    <tr><th>Solicitud</th><th>Fecha</th><th>Estado</th></tr>
+    {% for s in solicitudes %}
+    <tr>
+        <td>{{ s.get_tipo_display }}</td>
+        <td>{{ s.fecha_desde|default:s.fecha_solicitud|date:"d/m/Y" }}</td>
+        <td>{{ s.get_estado_display }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="3">No tienes solicitudes.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

@@ -35,6 +35,7 @@ class UsuarioCrearForm(UserCreationForm):
             'email',
             'identificacion',
             'fecha_ingreso',
+            'salario_base',
             'estado',
             'groups'
         ]
@@ -44,6 +45,7 @@ class UsuarioCrearForm(UserCreationForm):
             'first_name': 'Nombres',
             'last_name': 'Apellidos',
             'email': 'Correo electrónico',
+            'salario_base': 'Salario base',
             'estado': 'Estado',
             'groups': 'Rol',
         }
@@ -61,6 +63,12 @@ class UsuarioCrearForm(UserCreationForm):
         widgets = {
             'estado': forms.Select(choices=Usuario.Estado.choices),
             'groups': forms.CheckboxSelectMultiple,
+            'salario_base': forms.NumberInput(attrs={
+                'min': 0,
+                'step': '0.01',
+                'inputmode': 'numeric',
+                'placeholder': 'Salario base en pesos',
+            }),
         }
 
     def __init__(self, *args, **kwargs):
@@ -98,7 +106,6 @@ class UsuarioActualizarForm(forms.ModelForm):
     fecha_ingreso = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date'}),
         required=True,
-        label='Fecha de ingreso',
     )
 
     class Meta:
@@ -110,6 +117,7 @@ class UsuarioActualizarForm(forms.ModelForm):
             'email',
             'identificacion',
             'fecha_ingreso',
+            'salario_base',
             'estado',
             'groups'
         ]
@@ -119,6 +127,7 @@ class UsuarioActualizarForm(forms.ModelForm):
             'first_name': 'Nombres',
             'last_name': 'Apellidos',
             'email': 'Correo electrónico',
+            'salario_base': 'Salario base',
             'estado': 'Estado',
             'groups': 'Rol',
         }
@@ -132,6 +141,12 @@ class UsuarioActualizarForm(forms.ModelForm):
         widgets = {
             'estado': forms.Select(choices=Usuario.Estado.choices),
             'groups': forms.CheckboxSelectMultiple,
+            'salario_base': forms.NumberInput(attrs={
+                'min': 0,
+                'step': '0.01',
+                'inputmode': 'numeric',
+                'placeholder': 'Salario base en pesos',
+            }),
         }
 
     def __init__(self, *args, **kwargs):
@@ -142,9 +157,11 @@ class UsuarioActualizarForm(forms.ModelForm):
 
 class RolForm(forms.ModelForm):
     permissions = forms.ModelMultipleChoiceField(
-        queryset=Permission.objects.all(),
+        queryset=Permission.objects.all().order_by(
+            'content_type__app_label', 'codename'),
         label='Permisos',
-        widget=FilteredSelectMultiple('permisos', is_stacked=False),
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
     )
 
     class Meta:
@@ -153,4 +170,11 @@ class RolForm(forms.ModelForm):
 
         labels = {
             'name': 'Nombre del rol',
+        }
+
+        error_messages = {
+            'name': {
+                'required': 'El nombre del rol es obligatorio.',
+                'unique': 'Ya existe un rol con ese nombre.',
+            },
         }

@@ -1,0 +1,37 @@
+{% extends 'index.html' %}
+{% block titulo %}Cálculo nómina{% endblock %}
+{% block mod_nomina %}abierto{% endblock %}
+{% block menu_calculo %}activo{% endblock %}
+{% block encabezado %}Cálculo nómina{% endblock %}
+
+{% block contenido %}
+<form method="post" class="filtros-auditoria">
+    {% csrf_token %}
+    <div class="filtro filtro--fecha">
+        <span class="filtro-titulo">Período</span>
+        <input type="month" name="periodo" value="{{ periodo }}" required
+               min="2020-01" max="{{ hoy|date:'Y-m' }}" id="input-periodo">
+    </div>
+    <div class="filtros-acciones">
+        <button type="submit" class="btn btn-morado">Calcular</button>
+    </div>
+</form>
+<table>
+    <tr>
+        <th>Empleado</th><th>Salario bruto</th><th>Bonificaciones</th>
+        <th>Horas extra</th><th>Deducciones (8%)</th><th>Total a pagar</th>
+    </tr>
+    {% for n in nominas %}
+    <tr>
+        <td>{{ n.usuario.get_full_name|default:n.usuario.username }}</td>
+        <td>${{ n.salario_bruto }}</td>
+        <td>${{ n.valor_bonificacion }}</td>
+        <td>${{ n.valor_horas_extra }}</td>
+        <td>-${{ n.deducciones }}</td>
+        <td><strong>${{ n.total_pagar }}</strong></td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6">Sin nómina calculada para {{ periodo }} — presiona Calcular.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

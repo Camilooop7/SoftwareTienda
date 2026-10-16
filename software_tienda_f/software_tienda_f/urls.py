@@ -17,6 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from aplicaciones.gestion_usuario.views import *
+from aplicaciones.nomina.views import *
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', UsuarioListaView.as_view(), name='usuario_usuarios'),
@@ -30,6 +31,15 @@ urlpatterns = [
     path('auditoria/', AuditoriaListView.as_view(), name='auditoria'),
     path('roles/', RolListView.as_view(), name='roles'),
     path('roles/<int:pk>/editar/', RolEditarView.as_view(), name='rol_editar'),
+    path('nomina/', NominaConsultarView.as_view(), name='nomina_consultar'),
+    path('nomina/historial/', NominaHistorialView.as_view(), name='nomina_historial'),
+    path('nomina/horas-extra/', HorasExtraView.as_view(), name='horas_extra'),
+    path('nomina/bonificaciones/', BonificacionesView.as_view(), name='bonificaciones'),
+    path('nomina/calculo/', CalculoNominaView.as_view(), name='calculo_nomina'),
+    path('nomina/vacaciones/', VacacionesView.as_view(), name='vacaciones'),
+    path('nomina/bandeja/', BandejaAprobacionView.as_view(), name='bandeja_aprobacion'),
+    path('notificacion/editar/', NotificacionEditarView.as_view(), name='notificacion_editar'),
+
 
 
 ]

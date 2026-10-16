@@ -1,0 +1,29 @@
+{% extends 'index.html' %}
+{% block titulo %}Bandeja de aprobación{% endblock %}
+{% block mod_nomina %}abierto{% endblock %}
+{% block menu_bandeja %}activo{% endblock %}
+{% block encabezado %}Bandeja de aprobación{% endblock %}
+
+{% block contenido %}
+<table>
+    <tr><th>Tipo</th><th>Empleado</th><th>Motivo</th><th>Fecha</th><th>Acción</th></tr>
+    {% for s in solicitudes %}
+    <tr>
+        <td>{{ s.get_tipo_display }}</td>
+        <td>{{ s.usuario.get_full_name|default:s.usuario.username }}</td>
+        <td>{{ s.motivo|default:"—" }}</td>
+        <td>{{ s.fecha_desde|default:s.fecha_solicitud|date:"d/m/Y" }}</td>
+        <td class="celda-acciones">
+            <form method="post" class="form-accion">
+                {% csrf_token %}
+                <input type="hidden" name="solicitud_id" value="{{ s.pk }}">
+                <button type="submit" name="accion" value="aprobar" class="btn btn-linea">✓ Aprobar</button>
+                <button type="submit" name="accion" value="rechazar" class="btn btn-rojo">✗ Rechazar</button>
+            </form>
+        </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="5">No hay solicitudes pendientes. 🎉</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

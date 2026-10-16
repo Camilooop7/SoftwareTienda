@@ -1,0 +1,33 @@
+{% extends 'index.html' %}
+{% block titulo %}Horas extra{% endblock %}
+{% block mod_nomina %}activo{% endblock %}
+{% block menu_horas %}activo{% endblock %}
+{% block encabezado %}Horas extra{% endblock %}
+
+{% block contenido %}
+<form method="post" class="form-capsula" style="max-width:100%;">
+    {% csrf_token %}
+    <p><label>Trabajador</label> {{ form.usuario }}</p>
+    <p><label>Fecha</label> {{ form.fecha }}</p>
+    <p><label>Hora ingreso</label> {{ form.hora_ingreso }}</p>
+    <p><label>Hora salida</label> {{ form.hora_salida }}</p>
+    <p><label>Motivo</label> {{ form.motivo }}</p>
+    <button type="submit" class="button-submit" style="max-width:220px;">Registrar</button>
+</form>
+
+<table style="margin-top:22px;">
+    <tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Valor</th><th>Motivo</th><th>Trabajador</th></tr>
+    {% for h in horas %}
+    <tr>
+        <td>{{ h.fecha|date:"d/m/Y" }}</td>
+        <td>{{ h.get_tipo_display }}</td>
+        <td>{{ h.cantidad_horas }}</td>
+        <td>${{ h.valor }}</td>
+        <td>{{ h.motivo }}</td>
+        <td>{{ h.usuario.get_full_name|default:h.usuario.username }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6">No hay horas extra registradas.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

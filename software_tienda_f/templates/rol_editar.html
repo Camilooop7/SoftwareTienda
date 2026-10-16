@@ -2,32 +2,28 @@
 {% block titulo %}Editar rol{% endblock %}
 {% block mod_gestion %}activo{% endblock %}
 {% block menu_roles %}activo{% endblock %}
-{% block encabezado %}Editar rol{% endblock %}
+{% block encabezado %}Editar rol: {{ form.instance.name }}{% endblock %}
 
 {% block contenido %}
-<form method="post" class="form" style="max-width:720px;">
+<form method="post" class="form-capsula" style="max-width:100%;">
     {% csrf_token %}
-    {{ form.media }}
+    {{ form.non_field_errors }}
 
     <p>
-        <label>{{ form.name.label }}</label>
+        <label>Nombre del rol</label>
         {{ form.name }}
+        {{ form.name.errors }}
     </p>
-    {% if form.name.errors %}
-    <ul class="errores">{% for e in form.name.errors %}<li>{{ e }}</li>{% endfor %}</ul>
-    {% endif %}
 
     <p>
         <label>Permisos disponibles</label>
         {{ form.permissions }}
+        {{ form.permissions.errors }}
     </p>
-    {% if form.permissions.errors %}
-    <ul class="errores">{% for e in form.permissions.errors %}<li>{{ e }}</li>{% endfor %}</ul>
-    {% endif %}
 
-    <div class="acciones-barra" style="margin-top:22px;">
-        <button type="submit" class="btn btn-morado">Guardar</button>
-        <a href="{% url 'roles' %}" class="btn btn-linea">Cancelar</a>
+    <div class="form-acciones" style="display:flex; flex-direction:column; align-items:center; gap:10px; margin:20px 0 0;">
+        <button type="submit" class="button-submit" style="max-width:240px; margin:0;">Guardar</button>
+        <a href="{% url 'roles' %}" class="p" style="margin:0;">Volver a la lista</a>
     </div>
 </form>
 {% endblock %}

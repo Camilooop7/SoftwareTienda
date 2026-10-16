@@ -12,7 +12,7 @@ class Usuario(AbstractUser):
     identificacion = models.PositiveIntegerField(max_length=25, unique=True, null=True, blank=True)
     estado = models.CharField(max_length=10, choices=Estado.choices, default=Estado.ACTIVO)
     fecha_ingreso = models.DateField(null=True, blank=True)
-
+    salario_base = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     def __str__(self):
         return "{0} (ID: {1} - Identificacion: {2} - Estado: {3})".format(self.get_full_name() or self.username,
                                                                           self.pk, self.identificacion, self.estado)
@@ -38,6 +38,7 @@ class Auditoria(models.Model):
         ELIMINAR = 'ELIMINAR', 'Eliminar'
         SALIR = 'SALIR', 'Salir'
         ERROR_ACCESO = 'ERROR_ACCESO', 'Intento fallido de acceso'
+        CALCULAR = 'CALCULAR', 'Cálculo de nómina'
 
     usuario = models.ForeignKey(Usuario, on_delete=models.SET_NULL,null=True,related_name='auditorias')
     accion = models.CharField(max_length=20, choices=Accion.choices)

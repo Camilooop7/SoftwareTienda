@@ -1,0 +1,45 @@
+{% extends 'index.html' %}
+{% block titulo %}Bonificaciones{% endblock %}
+{% block mod_nomina %}abierto{% endblock %}
+{% block menu_bonificaciones %}activo{% endblock %}
+{% block encabezado %}Bonificaciones{% endblock %}
+
+{% block contenido %}
+<h3 style="margin-bottom:12px;">Configuración de bonificaciones</h3>
+
+<form method="post" class="form-capsula" style="max-width:100%;">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <p>
+        <label>Empleado</label>
+        {{ form.usuario }}
+        {{ form.usuario.errors }}
+    </p>
+    <p>
+        <label>% Bonificación</label>
+        {{ form.porcentaje }}
+        {{ form.porcentaje.errors }}
+    </p>
+    <p>
+        <label>Meta mensual</label>
+        {{ form.meta_mensual }}
+        {{ form.meta_mensual.errors }}
+    </p>
+    <button type="submit" class="button-submit" style="max-width:240px;">Calcular</button>
+</form>
+
+<table style="margin-top:24px;">
+    <tr><th>Empleado</th><th>% Bonificación</th><th>Meta mensual</th><th>Valor calculado</th></tr>
+    {% for item in configs %}
+    <tr>
+        <td>{{ item.config.usuario.get_full_name|default:item.config.usuario.username }}</td>
+        <td>{{ item.config.porcentaje }}%</td>
+        <td>${{ item.config.meta_mensual }}</td>
+        <td><strong>${{ item.valor }}</strong></td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="4">Sin bonificaciones configuradas.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends 'index.html' %}
+{% block titulo %}Historial{% endblock %}
+{% block mod_nomina %}abierto{% endblock %}
+{% block menu_historial %}activo{% endblock %}
+{% block encabezado %}Historial{% endblock %}
+
+{% block contenido %}
+
+<form method="get" class="filtros-auditoria">
+
+    <div class="filtro filtro--accion">
+        <span class="filtro-titulo">Tipo</span>
+        <select name="tipo">
+            <option value="">Todos</option>
+            {% for valor, nombre in tipos %}
+                <option value="{{ valor }}" {% if filtros.tipo == valor %}selected{% endif %}>
+                    {{ nombre }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="filtro filtro--fecha">
+        <span class="filtro-titulo">Desde</span>
+        <input type="date" name="desde" value="{{ filtros.desde|default:'' }}">
+    </div>
+
+    <div class="filtro filtro--usuario">
+        <span class="filtro-titulo">Hasta</span>
+        <input type="date" name="hasta" value="{{ filtros.hasta|default:'' }}">
+    </div>
+
+    <div class="filtros-acciones">
+        <button type="submit" class="btn btn-morado">Filtrar</button>
+        <a href="{% url 'nomina_historial' %}" class="btn btn-linea">Limpiar</a>
+    </div>
+
+</form>
+
+<table>
+    <tr><th>Tipo</th><th>Motivo</th><th>Fecha</th><th>Estado</th></tr>
+    {% for s in solicitudes %}
+    <tr>
+        <td>{{ s.get_tipo_display }}</td>
+        <td>{{ s.motivo|default:"—" }}</td>
+        <td>{{ s.fecha_desde|default:s.fecha_solicitud|date:"d/m/Y" }}</td>
+        <td>{{ s.get_estado_display }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="4">Sin movimientos.</td></tr>
+    {% endfor %}
+</table>
+
+{% if page_obj.has_previous or page_obj.has_next %}
+<div class="acciones-barra" style="justify-content:center;">
+    {% if page_obj.has_previous %}
+        <a class="btn btn-linea" href="?tipo={{ filtros.tipo }}&desde={{ filtros.desde }}&hasta={{ filtros.hasta }}&page={{ page_obj.previous_page_number }}">← Anterior</a>
+    {% endif %}
+    <span style="align-self:center; color:#64748B; font-size:13px;">
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+    </span>
+    {% if page_obj.has_next %}
+        <a class="btn btn-linea" href="?tipo={{ filtros.tipo }}&desde={{ filtros.desde }}&hasta={{ filtros.hasta }}&page={{ page_obj.next_page_number }}">Siguiente →</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

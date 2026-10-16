@@ -1,0 +1,44 @@
+{% extends 'index.html' %}
+{% block titulo %}Vacaciones{% endblock %}
+{% block mod_nomina %}abierto{% endblock %}
+{% block menu_vacaciones %}activo{% endblock %}
+{% block encabezado %}Vacaciones{% endblock %}
+
+{% block contenido %}
+<form method="post" class="form-capsula" style="max-width:100%;">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <p>
+        <label>Motivo</label>
+        {{ form.motivo }}
+        {{ form.motivo.errors }}
+    </p>
+    <p>
+        <label>Desde</label>
+        {{ form.fecha_desde }}
+        {{ form.fecha_desde.errors }}
+    </p>
+    <p>
+        <label>Hasta</label>
+        {{ form.fecha_hasta }}
+        {{ form.fecha_hasta.errors }}
+    </p>
+    <button type="submit" class="button-submit">Solicitar</button>
+</form>
+
+<table style="margin-top:24px;">
+    <tr><th>Solicitud</th><th>Motivo</th><th>Desde</th><th>Hasta</th><th>Estado</th></tr>
+    {% for s in solicitudes %}
+    <tr>
+        <td>Vacaciones</td>
+        <td>{{ s.motivo|default:"—" }}</td>
+        <td>{{ s.fecha_desde|date:"d/m/Y" }}</td>
+        <td>{{ s.fecha_hasta|date:"d/m/Y" }}</td>
+        <td>{{ s.get_estado_display }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="5">No tienes solicitudes de vacaciones.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}
