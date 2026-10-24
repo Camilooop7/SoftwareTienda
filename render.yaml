@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: software-tienda
+    runtime: python
+    rootDir: software_tienda_f
+    buildCommand: bash build.sh
+    startCommand: gunicorn software_tienda_f.wsgi:application
+    envVars:
+      - key: DATABASE_URL
+        sync: false          # la pegas tú en el panel de Render
+      - key: SECRET_KEY
+        generateValue: true  # Render genera una aleatoria
+      - key: DEBUG
+        value: "False"
