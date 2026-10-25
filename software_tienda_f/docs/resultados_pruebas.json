@@ -1,9 +1,9 @@
 {
-  "fecha_ejecucion": "2026-10-25T06:18:21-05:00",
+  "fecha_ejecucion": "2026-10-25T07:39:28-05:00",
   "totales": {
-    "casos": 305,
-    "aprobados": 301,
-    "fallidos": 4
+    "casos": 306,
+    "aprobados": 305,
+    "fallidos": 1
   },
   "casos": [
     {
@@ -1104,7 +1104,7 @@
       "descripcion": "Validar que el historial muestre la fecha y hora de la respuesta.",
       "input": "Solicitud respondida ahora",
       "esperado": "El historial muestra la fecha en formato dd/mm/aaaa hh:mm",
-      "obtenido": "Fecha 25/10/2026 06:09 visible: True",
+      "obtenido": "Fecha 25/10/2026 07:31 visible: True",
       "estado": "ok",
       "error": "",
       "observacion": "",
@@ -1832,7 +1832,7 @@
       "descripcion": "Validar que la aceptación registre quién y cuándo revisó.",
       "input": "Pre-nómina aceptada por el Auxiliar",
       "esperado": "revisada_por = Auxiliar y fecha_revision con valor",
-      "obtenido": "Revisada por: prenomina-auxiliar (ID: 167 - Identificacion: None - Estado: ACTIVO); fecha: 2026-10-25 10:58:50.170151+00:00",
+      "obtenido": "Revisada por: prenomina-auxiliar (ID: 169 - Identificacion: None - Estado: ACTIVO); fecha: 2026-10-25 12:21:55.350990+00:00",
       "estado": "ok",
       "error": "",
       "observacion": "",
@@ -1975,7 +1975,7 @@
       "descripcion": "Validar que la respuesta registre la fecha y quién respondió.",
       "input": "Solicitud de vacaciones aprobada por el Auxiliar",
       "esperado": "fecha_respuesta con valor; respondida_por = Auxiliar",
-      "obtenido": "Fecha respuesta: 2026-10-25 11:10:24.661817+00:00; respondida por: auxiliar-resp (ID: 1134 - Identificacion: None - Estado: ACTIVO)",
+      "obtenido": "Fecha respuesta: 2026-10-25 12:31:53.718454+00:00; respondida por: auxiliar-resp (ID: 1136 - Identificacion: None - Estado: ACTIVO)",
       "estado": "ok",
       "error": "",
       "observacion": "",
@@ -2789,6 +2789,19 @@
       "cp": "CP214"
     },
     {
+      "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.LoginT61Test.test_login_correo_no_confunde_con_username",
+      "rf": "RF-010",
+      "descripcion": "Validar que un correo inicie sesión en su propia cuenta aunque otro usuario tenga ese texto como nombre de usuario.",
+      "input": "Usuario A con username 'login-t61@example.com' y clave 'OtraClave9'; usuario B con ese correo; se ingresa el correo con la clave de B",
+      "esperado": "Inicia sesión el usuario B (dueño del correo)",
+      "obtenido": "Sesión iniciada para: login-t61",
+      "estado": "ok",
+      "error": "",
+      "observacion": "",
+      "observacion_estado": false,
+      "cp": "CP215"
+    },
+    {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.CambioContrasenaT61Test.test_cambio_valido_conserva_sesion",
       "rf": "RF-011",
       "descripcion": "Validar que tras cambiar la contraseña la sesión siga abierta.",
@@ -2799,7 +2812,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP215"
+      "cp": "CP216"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.CambioContrasenaT61Test.test_cambio_valido_guarda_clave",
@@ -2812,7 +2825,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP216"
+      "cp": "CP217"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.CambioContrasenaT61Test.test_contrasena_actual_incorrecta_muestra_error",
@@ -2825,7 +2838,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP217"
+      "cp": "CP218"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_pago_empleado.PagoEmpleadoTest.test_perfil_enmascara_cuenta",
@@ -2838,7 +2851,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP218"
+      "cp": "CP219"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_pago_empleado.PagoEmpleadoTest.test_perfil_muestra_metodo_pago",
@@ -2851,7 +2864,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP219"
+      "cp": "CP220"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_pago_empleado.PagoEmpleadoTest.test_perfil_no_muestra_cuenta_completa",
@@ -2864,7 +2877,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP220"
+      "cp": "CP221"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.PerfilPropioT61Test.test_correo_duplicado_muestra_mensaje",
@@ -2877,7 +2890,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP221"
+      "cp": "CP222"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.PerfilPropioT61Test.test_formulario_no_expone_campos_administrativos",
@@ -2890,7 +2903,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP222"
+      "cp": "CP223"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.PerfilPropioT61Test.test_nombre_con_numeros_muestra_mensaje",
@@ -2903,7 +2916,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP223"
+      "cp": "CP224"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.PerfilPropioT61Test.test_vendedor_actualiza_correo",
@@ -2916,7 +2929,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP224"
+      "cp": "CP225"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.PerfilPropioT61Test.test_vendedor_actualiza_nombres",
@@ -2929,7 +2942,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP225"
+      "cp": "CP226"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_validaciones.ValidacionesGestionUsuarioTest.test_edicion_conserva_identificacion_y_correo",
@@ -2942,7 +2955,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP226"
+      "cp": "CP227"
     },
     {
       "id": "aplicaciones.nomina.tests.test_integracion.IntegracionNominaTest.test_ciclo_completo_empleado_ve_pago",
@@ -2955,7 +2968,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP227"
+      "cp": "CP228"
     },
     {
       "id": "aplicaciones.nomina.tests.test_vistas.PreNominaIntegracionViewTest.test_perfil_muestra_ultimo_pago",
@@ -2968,7 +2981,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP228"
+      "cp": "CP229"
     },
     {
       "id": "aplicaciones.nomina.tests.test_integracion.IntegracionNominaTest.test_permisos_bandeja",
@@ -2981,7 +2994,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP229"
+      "cp": "CP230"
     },
     {
       "id": "aplicaciones.nomina.tests.test_integracion.IntegracionNominaTest.test_permisos_calculo",
@@ -2994,7 +3007,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP230"
+      "cp": "CP231"
     },
     {
       "id": "aplicaciones.nomina.tests.test_integracion.IntegracionNominaTest.test_permisos_detalle_prenomina",
@@ -3007,7 +3020,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP231"
+      "cp": "CP232"
     },
     {
       "id": "aplicaciones.nomina.tests.test_integracion.IntegracionNominaTest.test_permisos_novedades",
@@ -3020,7 +3033,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP232"
+      "cp": "CP233"
     },
     {
       "id": "aplicaciones.nomina.tests.test_integracion.IntegracionNominaTest.test_permisos_reporte_mensual",
@@ -3033,7 +3046,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP233"
+      "cp": "CP234"
     },
     {
       "id": "aplicaciones.nomina.tests.test_integracion.IntegracionNominaTest.test_permisos_reporte_pdf",
@@ -3046,7 +3059,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP234"
+      "cp": "CP235"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.GestionRolesT61Test.test_crear_rol",
@@ -3059,7 +3072,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP235"
+      "cp": "CP236"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.GestionRolesT61Test.test_crear_rol_duplicado_muestra_mensaje",
@@ -3072,7 +3085,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP236"
+      "cp": "CP237"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.GestionRolesT61Test.test_eliminar_rol_vacio",
@@ -3085,7 +3098,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP237"
+      "cp": "CP238"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.GestionRolesT61Test.test_no_elimina_rol_base",
@@ -3098,7 +3111,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP238"
+      "cp": "CP239"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.GestionRolesT61Test.test_no_elimina_rol_con_usuarios_asignados",
@@ -3111,7 +3124,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP239"
+      "cp": "CP240"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_validaciones.ValidacionesGestionUsuarioTest.test_rol_nombre_con_numero",
@@ -3124,7 +3137,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP240"
+      "cp": "CP241"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_validaciones.ValidacionesGestionUsuarioTest.test_rol_nombre_duplicado",
@@ -3137,7 +3150,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP241"
+      "cp": "CP242"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_vistas.GestionUsuariosTest.test_gerente_edita_rol",
@@ -3150,7 +3163,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP242"
+      "cp": "CP243"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.RolesMultiplesT61Test.test_crear_usuario_con_dos_roles",
@@ -3163,7 +3176,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP243"
+      "cp": "CP244"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.RolesMultiplesT61Test.test_crear_usuario_sin_roles_muestra_mensaje",
@@ -3176,7 +3189,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP244"
+      "cp": "CP245"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.RolesMultiplesT61Test.test_dos_roles_accede_bandeja",
@@ -3189,7 +3202,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP245"
+      "cp": "CP246"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.RolesMultiplesT61Test.test_dos_roles_accede_consulta",
@@ -3202,7 +3215,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP246"
+      "cp": "CP247"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_validaciones.ValidacionesGestionUsuarioTest.test_varios_roles_permitidos",
@@ -3215,7 +3228,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP247"
+      "cp": "CP248"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.FiltrosUsuariosT61Test.test_filtro_por_estado",
@@ -3228,7 +3241,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP248"
+      "cp": "CP249"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.FiltrosUsuariosT61Test.test_filtro_por_nombre_parcial_sin_distinguir_mayusculas",
@@ -3241,7 +3254,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP249"
+      "cp": "CP250"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.FiltrosUsuariosT61Test.test_filtro_por_rol",
@@ -3254,7 +3267,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP250"
+      "cp": "CP251"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.FiltrosUsuariosT61Test.test_filtros_combinados",
@@ -3267,7 +3280,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP251"
+      "cp": "CP252"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.FiltrosUsuariosT61Test.test_nombre_con_menor_muestra_error_y_responde_200",
@@ -3280,7 +3293,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP252"
+      "cp": "CP253"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.CambioContrasenaT61Test.test_cambio_valido_registra_auditoria",
@@ -3293,7 +3306,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP253"
+      "cp": "CP254"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.GestionRolesT61Test.test_crear_rol_registra_auditoria",
@@ -3306,7 +3319,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP254"
+      "cp": "CP255"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.GestionRolesT61Test.test_eliminar_rol_vacio_registra_auditoria",
@@ -3319,7 +3332,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP255"
+      "cp": "CP256"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.LoginT61Test.test_contrasena_incorrecta_crea_auditoria",
@@ -3332,7 +3345,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP256"
+      "cp": "CP257"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_vistas.AuditoriaFiltroValidacionTest.test_fecha_invalida_muestra_mensaje",
@@ -3345,7 +3358,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP257"
+      "cp": "CP258"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_vistas.AuditoriaFiltroValidacionTest.test_fecha_invalida_responde_200",
@@ -3358,7 +3371,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP258"
+      "cp": "CP259"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_vistas.GestionUsuariosTest.test_auditoria_se_formatea",
@@ -3366,12 +3379,12 @@
       "descripcion": "Validar representación textual de auditoría.",
       "input": "registro con detalle 'Prueba de formato'",
       "esperado": "La representación incluye Prueba de formato.",
-      "obtenido": "Representación: gerente-t16 (ID: 85 - Identificacion: None - Estado: ACTIVO) - Crear (Prueba de formato)",
+      "obtenido": "Representación: gerente-t16 (ID: 87 - Identificacion: None - Estado: ACTIVO) - Crear (Prueba de formato)",
       "estado": "ok",
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP259"
+      "cp": "CP260"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_vistas.GestionUsuariosTest.test_crear_usuario_registra_auditoria",
@@ -3384,7 +3397,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP260"
+      "cp": "CP261"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_vistas.GestionUsuariosTest.test_eliminar_usuario_registra_auditoria",
@@ -3397,7 +3410,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP261"
+      "cp": "CP262"
     },
     {
       "id": "aplicaciones.nomina.tests.test_integracion.IntegracionNominaTest.test_ciclo_completo_auditoria",
@@ -3410,7 +3423,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP262"
+      "cp": "CP263"
     },
     {
       "id": "aplicaciones.nomina.tests.test_vistas.ReportePDFViewTest.test_exportar_pdf_registra_auditoria",
@@ -3423,7 +3436,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP263"
+      "cp": "CP264"
     },
     {
       "id": "aplicaciones.nomina.tests.test_rendimiento.RendimientoNominaTest.test_contrasenas_de_usuarios_no_estan_en_texto_plano",
@@ -3436,7 +3449,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP264"
+      "cp": "CP265"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.GestionRolesT61Test.test_vendedor_no_puede_crear_roles",
@@ -3449,7 +3462,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP265"
+      "cp": "CP266"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.GestionRolesT61Test.test_vendedor_no_puede_eliminar_roles",
@@ -3462,7 +3475,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP266"
+      "cp": "CP267"
     },
     {
       "id": "aplicaciones.nomina.tests.test_vistas.NovedadesViewTest.test_novedades_restringe_vendedor",
@@ -3475,7 +3488,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP267"
+      "cp": "CP268"
     },
     {
       "id": "aplicaciones.nomina.tests.test_vistas.PreNominaIntegracionViewTest.test_detalle_restringido",
@@ -3488,7 +3501,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP268"
+      "cp": "CP269"
     },
     {
       "id": "aplicaciones.nomina.tests.test_vistas.ReporteMensualViewTest.test_anonimo_redirige_login",
@@ -3501,7 +3514,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP269"
+      "cp": "CP270"
     },
     {
       "id": "aplicaciones.nomina.tests.test_vistas.ReporteMensualViewTest.test_auxiliar_ve_reportes",
@@ -3514,7 +3527,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP270"
+      "cp": "CP271"
     },
     {
       "id": "aplicaciones.nomina.tests.test_vistas.ReporteMensualViewTest.test_gerente_ve_reportes",
@@ -3527,7 +3540,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP271"
+      "cp": "CP272"
     },
     {
       "id": "aplicaciones.nomina.tests.test_vistas.ReporteMensualViewTest.test_vendedor_no_ve_reportes",
@@ -3540,7 +3553,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP272"
+      "cp": "CP273"
     },
     {
       "id": "aplicaciones.nomina.tests.test_vistas.ReportePDFViewTest.test_anonimo_no_descarga_pdf",
@@ -3553,7 +3566,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP273"
+      "cp": "CP274"
     },
     {
       "id": "aplicaciones.nomina.tests.test_vistas.ReportePDFViewTest.test_vendedor_no_descarga_pdf",
@@ -3566,7 +3579,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP274"
+      "cp": "CP275"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.CambioContrasenaT61Test.test_nueva_contrasena_de_siete_caracteres_muestra_mensaje",
@@ -3579,7 +3592,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP275"
+      "cp": "CP276"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.CambioContrasenaT61Test.test_nueva_contrasena_sin_mayuscula_muestra_mensaje",
@@ -3592,7 +3605,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP276"
+      "cp": "CP277"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.CambioContrasenaT61Test.test_nueva_contrasena_sin_minuscula_muestra_mensaje",
@@ -3605,7 +3618,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP277"
+      "cp": "CP278"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_rf_usuarios.CambioContrasenaT61Test.test_nueva_contrasena_sin_numero_muestra_mensaje",
@@ -3618,7 +3631,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP278"
+      "cp": "CP279"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_validaciones.ComplejidadContrasenaCasosTest.test_contrasena_ayuda",
@@ -3631,7 +3644,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP279"
+      "cp": "CP280"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_validaciones.ComplejidadContrasenaCasosTest.test_contrasena_valida",
@@ -3644,7 +3657,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP280"
+      "cp": "CP281"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_validaciones.ComplejidadContrasenaCasosTest.test_requiere_mayuscula",
@@ -3657,7 +3670,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP281"
+      "cp": "CP282"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_validaciones.ComplejidadContrasenaCasosTest.test_requiere_minuscula",
@@ -3670,7 +3683,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP282"
+      "cp": "CP283"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_validaciones.ComplejidadContrasenaCasosTest.test_requiere_numero",
@@ -3683,7 +3696,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP283"
+      "cp": "CP284"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_validaciones.ValidacionesGestionUsuarioTest.test_contrasena_sin_mayuscula",
@@ -3696,7 +3709,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP284"
+      "cp": "CP285"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_validaciones.ValidacionesGestionUsuarioTest.test_contrasena_sin_minuscula",
@@ -3709,7 +3722,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP285"
+      "cp": "CP286"
     },
     {
       "id": "aplicaciones.gestion_usuario.tests.test_validaciones.ValidacionesGestionUsuarioTest.test_contrasena_sin_numero",
@@ -3722,7 +3735,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP286"
+      "cp": "CP287"
     },
     {
       "id": "Locust humo Vercel, 5 usuarios",
@@ -3732,7 +3745,7 @@
       "esperado": "p95 <= 2.000 ms y 0 errores",
       "obtenido": "p95 140 ms; 0 errores",
       "estado": "ok",
-      "cp": "CP287"
+      "cp": "CP288"
     },
     {
       "id": "Locust optimizada, login, 30 usuarios",
@@ -3744,7 +3757,7 @@
       "estado": "ok",
       "observacion": "Supera 2 s solo con 30 inicios de sesión simultáneos en el equipo local (hash PBKDF2 por petición). Un inicio de sesión individual tarda menos de 2 s (CP automatizado de RNF-005) y en Vercel el p95 fue 140 ms.",
       "observacion_estado": true,
-      "cp": "CP288"
+      "cp": "CP289"
     },
     {
       "id": "aplicaciones.nomina.tests.test_rendimiento.RendimientoNominaTest.test_login_valido_hasta_2_segundos",
@@ -3752,12 +3765,12 @@
       "descripcion": "Validar que un inicio de sesión válido responda en hasta 2 segundos.",
       "input": "POST login con correo perf@example.com y contraseña ClaveSegura1",
       "esperado": "HTTP 302 en <= 2,00 s",
-      "obtenido": "HTTP 302; tiempo medido: 1.695 s",
+      "obtenido": "HTTP 302; tiempo medido: 1.614 s",
       "estado": "ok",
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP289"
+      "cp": "CP290"
     },
     {
       "id": "aplicaciones.nomina.tests.test_rendimiento.RendimientoNominaTest.test_generacion_prenomina_200_empleados_hasta_60_segundos",
@@ -3765,12 +3778,12 @@
       "descripcion": "Validar que la pre-nómina de 200 empleados tarde como máximo 60 segundos.",
       "input": "200 usuarios activos con salarios variados; período 2026-09",
       "esperado": "Tiempo <= 60,00 s",
-      "obtenido": "Tiempo medido: 69.13 s para 200 empleados",
-      "estado": "fallo",
-      "error": "Traceback (most recent call last): File \"D:\\PG\\GIT\\SoftwareTienda\\software_tienda_f\\aplicaciones\\casos_prueba.py\", line 36, in ejecuta resultado = funcion(self, *args, **kwargs) File \"D:\\PG\\GIT\\SoftwareTienda\\software_tienda_f\\aplicaciones\\nomina\\tests\\test_rendimiento.py\", line 41, in test_generaci",
-      "observacion": "",
+      "obtenido": "Tiempo medido: 1.43 s para 200 empleados",
+      "estado": "ok",
+      "error": "",
+      "observacion": "Primera ejecución: No aprobado (69,13 s) por 3 consultas por empleado. Defecto corregido: bonificaciones y horas extra se leen en 2 consultas y las nóminas se insertan con bulk_create.",
       "observacion_estado": false,
-      "cp": "CP290"
+      "cp": "CP291"
     },
     {
       "id": "Locust línea base, 30 usuarios",
@@ -3781,7 +3794,7 @@
       "obtenido": "Mediana 3.500 ms; p95 4.200 ms; 0 errores",
       "estado": "fallo",
       "observacion": "Defecto encontrado: se abría una conexión nueva a Neon en cada petición. Corregido con CONN_MAX_AGE y CONN_HEALTH_CHECKS; el re-test (carga optimizada) cumple.",
-      "cp": "CP291"
+      "cp": "CP292"
     },
     {
       "id": "Locust optimizada, consultas, 30 usuarios",
@@ -3792,7 +3805,7 @@
       "obtenido": "p95 1.600-1.900 ms; PDF 1.600 ms",
       "estado": "ok",
       "observacion": "Re-test tras corregir el defecto de conexiones. Incluye consultas filtradas y exportación PDF.",
-      "cp": "CP292"
+      "cp": "CP293"
     },
     {
       "id": "aplicaciones.nomina.tests.test_rendimiento.RendimientoNominaTest.test_auditoria_filtrada_hasta_3_segundos",
@@ -3800,25 +3813,25 @@
       "descripcion": "Validar que la auditoría filtrada responda en hasta 3 segundos.",
       "input": "300 registros de auditoría; filtro de acción CREAR",
       "esperado": "HTTP 200 en <= 3,00 s",
-      "obtenido": "HTTP 200; tiempo medido: 0.907 s",
+      "obtenido": "HTTP 200; tiempo medido: 0.871 s",
       "estado": "ok",
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP293"
+      "cp": "CP294"
     },
     {
       "id": "aplicaciones.nomina.tests.test_rendimiento.RendimientoNominaTest.test_historial_filtrado_hasta_3_segundos",
       "rf": "RNF-007",
       "descripcion": "Validar que el historial filtrado responda en hasta 3 segundos.",
-      "input": "200 usuarios; filtro de período 2026-09",
+      "input": "200 usuarios; empleado con rol Vendedor; filtro de período 2026-09",
       "esperado": "HTTP 200 en <= 3,00 s",
-      "obtenido": "HTTP 403; tiempo medido: 0.674 s",
-      "estado": "fallo",
-      "error": "Traceback (most recent call last): File \"D:\\PG\\GIT\\SoftwareTienda\\software_tienda_f\\aplicaciones\\casos_prueba.py\", line 36, in ejecuta resultado = funcion(self, *args, **kwargs) File \"D:\\PG\\GIT\\SoftwareTienda\\software_tienda_f\\aplicaciones\\nomina\\tests\\test_rendimiento.py\", line 67, in test_historia",
-      "observacion": "",
+      "obtenido": "HTTP 200; tiempo medido: 0.760 s",
+      "estado": "ok",
+      "error": "",
+      "observacion": "Primera ejecución: HTTP 403 por un error de la prueba (el empleado no tenía rol). Se corrigió la prueba.",
       "observacion_estado": false,
-      "cp": "CP294"
+      "cp": "CP295"
     },
     {
       "id": "aplicaciones.nomina.tests.test_rendimiento.RendimientoNominaTest.test_lista_usuarios_filtrada_hasta_3_segundos",
@@ -3826,12 +3839,12 @@
       "descripcion": "Validar que la lista filtrada de usuarios responda en hasta 3 segundos.",
       "input": "200 usuarios; filtro nombre=Usuario",
       "esperado": "HTTP 200 en <= 3,00 s",
-      "obtenido": "HTTP 200; tiempo medido: 23.028 s",
-      "estado": "fallo",
-      "error": "Traceback (most recent call last): File \"D:\\PG\\GIT\\SoftwareTienda\\software_tienda_f\\aplicaciones\\casos_prueba.py\", line 36, in ejecuta resultado = funcion(self, *args, **kwargs) File \"D:\\PG\\GIT\\SoftwareTienda\\software_tienda_f\\aplicaciones\\nomina\\tests\\test_rendimiento.py\", line 59, in test_lista_us",
-      "observacion": "",
+      "obtenido": "HTTP 200; tiempo medido: 1.224 s",
+      "estado": "ok",
+      "error": "",
+      "observacion": "Primera ejecución: No aprobado (23,03 s) porque cada fila consultaba sus roles (N+1). Defecto corregido: obtener_rol usa los grupos precargados.",
       "observacion_estado": false,
-      "cp": "CP295"
+      "cp": "CP296"
     },
     {
       "id": "aplicaciones.nomina.tests.test_prenomina.MensajesExcepcionesTest.test_mensaje_hora_extra_invalida",
@@ -3844,7 +3857,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP296"
+      "cp": "CP297"
     },
     {
       "id": "aplicaciones.nomina.tests.test_prenomina.MensajesExcepcionesTest.test_mensaje_motivo_requerido",
@@ -3857,7 +3870,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP297"
+      "cp": "CP298"
     },
     {
       "id": "aplicaciones.nomina.tests.test_prenomina.MensajesExcepcionesTest.test_mensaje_nomina_ya_calculada",
@@ -3870,7 +3883,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP298"
+      "cp": "CP299"
     },
     {
       "id": "aplicaciones.nomina.tests.test_prenomina.MensajesExcepcionesTest.test_mensaje_prenomina_no_pendiente",
@@ -3883,7 +3896,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP299"
+      "cp": "CP300"
     },
     {
       "id": "aplicaciones.nomina.tests.test_prenomina.MensajesExcepcionesTest.test_mensaje_sin_empleados",
@@ -3896,20 +3909,20 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP300"
+      "cp": "CP301"
     },
     {
       "id": "aplicaciones.nomina.tests.test_rendimiento.RendimientoNominaTest.test_generar_prenomina_revierte_todo_ante_error_intermedio",
       "rf": "RNF-011",
       "descripcion": "Validar rollback si falla el cálculo de un empleado durante la pre-nómina.",
-      "input": "3 empleados activos; calcular_nomina falla en el tercero",
+      "input": "200 empleados activos; el cálculo falla en el tercer empleado",
       "esperado": "No quedan nóminas ni solicitud del período",
       "obtenido": "Nóminas restantes: 0; solicitudes restantes: 0",
       "estado": "ok",
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP301"
+      "cp": "CP302"
     },
     {
       "id": "Locust estrés, 20-200 usuarios",
@@ -3921,7 +3934,7 @@
       "estado": "ok",
       "observacion_estado": true,
       "observacion": "Soporta 200 usuarios sin errores; los tiempos se degradan desde unos 60 usuarios simultáneos (capacidad cómoda: unos 35).",
-      "cp": "CP302"
+      "cp": "CP303"
     },
     {
       "id": "aplicaciones.nomina.tests.test_comandos.PoblarDatosDemoTest.test_volumen_por_tabla",
@@ -3934,7 +3947,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP303"
+      "cp": "CP304"
     },
     {
       "id": "aplicaciones.nomina.tests.test_comandos.SembrarDatosCargaTest.test_rechaza_base_de_pruebas",
@@ -3947,7 +3960,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP304"
+      "cp": "CP305"
     },
     {
       "id": "aplicaciones.nomina.tests.test_comandos.SembrarDatosCargaTest.test_requiere_confirmacion",
@@ -3960,7 +3973,7 @@
       "error": "",
       "observacion": "",
       "observacion_estado": false,
-      "cp": "CP305"
+      "cp": "CP306"
     }
   ]
 }

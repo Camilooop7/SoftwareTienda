@@ -7,6 +7,7 @@ class CorreoOUsuarioBackend(ModelBackend):
         credencial = username or kwargs.get('email')
         if credencial is None or password is None:
             return None
+        credencial = str(credencial)
         UserModel = get_user_model()
         campo = 'email__iexact' if '@' in credencial else 'username__iexact'
         candidatos = list(UserModel._default_manager.filter(**{campo: credencial})[:2])
