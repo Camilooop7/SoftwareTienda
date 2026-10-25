@@ -1,6 +1,15 @@
 from datetime import datetime, timedelta
 from decimal import Decimal
-from .models import HoraExtra, Nomina, ConfiguracionBonificacion
+from django.db import transaction
+from django.utils import timezone
+from aplicaciones.gestion_usuario.models import Auditoria, Usuario
+from .models import HoraExtra, Nomina, ConfiguracionBonificacion, Solicitud
+from .excepciones import (
+    MotivoRechazoRequeridoError, NominaYaCalculadaError,
+    PreNominaNoPendienteError, SinEmpleadosActivosError,
+)
+from .reportes import nombre_periodo
+from .templatetags.formatos import formatear_moneda
 
 JORNADA_DIARIA = Decimal('8.4')
 HORA_INICIO_DIURNA = 6
@@ -59,17 +68,106 @@ def calcular_nomina(usuario, periodo):
     deducciones = salud + pension
     total = salario_bruto + bonificacion + total_horas - deducciones
 
-    nomina, creado = Nomina.objects.update_or_create(
+    return Nomina.objects.create(
         usuario=usuario,
         periodo=periodo,
-        defaults={
-            'salario_bruto': salario_bruto,
-            'valor_bonificacion': bonificacion,
-            'valor_horas_extra': total_horas,
-            'deducciones': deducciones,
-            'deduccion_salud': salud,
-            'deduccion_pension': pension,
-            'total_pagar': total,
-        },
+        salario_bruto=salario_bruto,
+        valor_bonificacion=bonificacion,
+        valor_horas_extra=total_horas,
+        deducciones=deducciones,
+        deduccion_salud=salud,
+        deduccion_pension=pension,
+        total_pagar=total,
     )
-    return nomina
+
+
+@transaction.atomic
+def generar_prenomina(periodo, calculada_por):
+    existentes = Nomina.objects.filter(periodo=periodo)
+    if existentes.filter(estado=Nomina.Estado.PENDIENTE).exists():
+        raise NominaYaCalculadaError(periodo, 'pendiente de aprobación')
+    if existentes.filter(estado=Nomina.Estado.ACEPTADA).exists():
+        raise NominaYaCalculadaError(periodo, 'aceptada')
+    existentes.filter(estado=Nomina.Estado.RECHAZADA).delete()
+
+    empleados = Usuario.objects.filter(is_active=True)
+    if not empleados.exists():
+        raise SinEmpleadosActivosError(periodo)
+
+    nominas = [calcular_nomina(usuario, periodo) for usuario in empleados]
+    total = sum((nomina.total_pagar for nomina in nominas), Decimal('0'))
+    motivo = 'Pre-nómina {0}: {1} empleados, total {2}'.format(
+        nombre_periodo(periodo), len(nominas), formatear_moneda(total))
+    solicitud = Solicitud.objects.create(
+        usuario=calculada_por,
+        tipo=Solicitud.Tipo.NOMINA,
+        periodo=periodo,
+        motivo=motivo,
+    )
+    Auditoria.objects.create(
+        usuario=calculada_por,
+        accion=Auditoria.Accion.CALCULAR,
+        detalle='Calculó la pre-nómina de {0} y la envió a aprobación'.format(periodo),
+    )
+    return solicitud
+
+
+def _obtener_prenomina_pendiente(solicitud):
+    solicitud = Solicitud.objects.select_for_update().get(pk=solicitud.pk)
+    if solicitud.tipo != Solicitud.Tipo.NOMINA:
+        raise ValueError('La solicitud no corresponde a una pre-nómina.')
+    if solicitud.estado != Solicitud.Estado.PENDIENTE:
+        raise PreNominaNoPendienteError(solicitud.get_estado_display().lower())
+    return solicitud
+
+
+@transaction.atomic
+def aceptar_prenomina(solicitud, auxiliar):
+    solicitud = _obtener_prenomina_pendiente(solicitud)
+    solicitud.estado = Solicitud.Estado.ACEPTADA
+    solicitud.save(update_fields=['estado'])
+    nominas = Nomina.objects.select_for_update().filter(
+        periodo=solicitud.periodo, estado=Nomina.Estado.PENDIENTE)
+    fecha_revision = timezone.now()
+    cantidad = 0
+    for nomina in nominas:
+        nomina.estado = Nomina.Estado.ACEPTADA
+        nomina.revisada_por = auxiliar
+        nomina.fecha_revision = fecha_revision
+        nomina.save(update_fields=['estado', 'revisada_por', 'fecha_revision'])
+        Usuario.objects.filter(pk=nomina.usuario_id).update(
+            ultimo_periodo_pagado=nomina.periodo,
+            ultimo_total_pagado=nomina.total_pagar,
+        )
+        cantidad += 1
+    Auditoria.objects.create(
+        usuario=auxiliar,
+        accion=Auditoria.Accion.ACTUALIZAR,
+        detalle='Aceptó la pre-nómina de {0}'.format(solicitud.periodo),
+    )
+    return cantidad
+
+
+@transaction.atomic
+def rechazar_prenomina(solicitud, auxiliar, motivo):
+    motivo = (motivo or '').strip()
+    if not motivo:
+        raise MotivoRechazoRequeridoError()
+    solicitud = _obtener_prenomina_pendiente(solicitud)
+    motivo = motivo[:200]
+    solicitud.estado = Solicitud.Estado.RECHAZADA
+    solicitud.motivo_rechazo = motivo
+    solicitud.save(update_fields=['estado', 'motivo_rechazo'])
+    fecha_revision = timezone.now()
+    Nomina.objects.select_for_update().filter(
+        periodo=solicitud.periodo, estado=Nomina.Estado.PENDIENTE).update(
+            estado=Nomina.Estado.RECHAZADA,
+            revisada_por=auxiliar,
+            fecha_revision=fecha_revision,
+            motivo_rechazo=motivo,
+        )
+    Auditoria.objects.create(
+        usuario=auxiliar,
+        accion=Auditoria.Accion.ACTUALIZAR,
+        detalle='Rechazó la pre-nómina de {0}: {1}'.format(solicitud.periodo, motivo),
+    )

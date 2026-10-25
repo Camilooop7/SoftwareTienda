@@ -38,6 +38,7 @@ urlpatterns = [
     path('nomina/calculo/', CalculoNominaView.as_view(), name='calculo_nomina'),
     path('nomina/vacaciones/', VacacionesView.as_view(), name='vacaciones'),
     path('nomina/bandeja/', BandejaAprobacionView.as_view(), name='bandeja_aprobacion'),
+    path('nomina/bandeja/prenomina/<int:pk>/', PreNominaDetalleView.as_view(), name='prenomina_detalle'),
     path('reportes/nomina/', ReporteMensualView.as_view(), name='reporte_mensual'),
     path('reportes/nomina/pdf/', ReporteMensualPDFView.as_view(), name='reporte_mensual_pdf'),
 ]

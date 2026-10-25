@@ -91,7 +91,7 @@ def generar_pdf_reporte(resumen, generado_por):
     divisor = Table([['']], colWidths=[doc.width], rowHeights=[1.2])
     divisor.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, -1), PINK)]))
     elementos.extend([Spacer(1, 8), divisor, Spacer(1, 9),
-                      Paragraph('Incluye únicamente nóminas aceptadas por el administrador.', estilo_nota),
+                      Paragraph('Incluye únicamente nóminas aceptadas por el Auxiliar Administrativo.', estilo_nota),
                       Paragraph('RESUMEN', estilo_seccion)])
 
     resumen_filas = [['Concepto', 'Valor']]

@@ -4,7 +4,11 @@
 {% block menu_consultar %}activo{% endblock %}
 {% block encabezado %}Consultar nómina{% endblock %}
 
+{% load formatos %}
 {% block contenido %}
+{% if nomina_pendiente %}
+<div class="mensaje mensaje--info">Tu nómina de {{ nombre_periodo }} está en revisión por el Auxiliar Administrativo.</div>
+{% endif %}
 <form method="get" class="filtros-auditoria">
     <div class="filtro filtro--fecha">
         <span class="filtro-titulo">Período</span>
@@ -19,16 +23,28 @@
 
 <div class="fichas">
     <div class="ficha ficha--violeta">
-        <span class="valor">${{ nomina.salario_bruto|default:salario_base }}</span>
+        <span class="valor">{% if nomina %}{{ nomina.salario_bruto|moneda }}{% elif not nomina_pendiente %}{{ salario_base|moneda }}{% else %}—{% endif %}</span>
         <span class="etiqueta">Salario bruto</span>
     </div>
     <div class="ficha ficha--rosa">
-        <span class="valor">${{ nomina.deducciones|default:"0" }}</span>
-        <span class="etiqueta">Deducciones (8%)</span>
+        <span class="valor">{{ nomina.deduccion_salud|default:0|moneda }}</span>
+        <span class="etiqueta">Salud (4%)</span>
     </div>
     <div class="ficha ficha--cian">
-        <span class="valor">${{ nomina.total_pagar|default:"—" }}</span>
+        <span class="valor">{{ nomina.deduccion_pension|default:0|moneda }}</span>
+        <span class="etiqueta">Pensión (4%)</span>
+    </div>
+    <div class="ficha ficha--rosa">
+        <span class="valor">{{ nomina.deducciones|default:0|moneda }}</span>
+        <span class="etiqueta">Deducciones</span>
+    </div>
+    <div class="ficha ficha--cian">
+        <span class="valor">{% if nomina %}{{ nomina.total_pagar|moneda }}{% else %}—{% endif %}</span>
         <span class="etiqueta">Total a pagar</span>
+    </div>
+    <div class="ficha ficha--violeta">
+        <span class="valor">{% if ultimo_periodo_pagado %}{{ ultimo_total_pagado|moneda }}{% else %}Sin pagos aceptados{% endif %}</span>
+        <span class="etiqueta">Último pago{% if ultimo_periodo_pagado %}: {{ ultimo_periodo_pagado }}{% endif %}</span>
     </div>
 </div>
 

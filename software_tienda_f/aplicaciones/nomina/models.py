@@ -42,6 +42,7 @@ class Solicitud(models.Model):
     class Tipo(models.TextChoices):
         VACACIONES = 'VACACIONES', 'Vacaciones'
         CERTIFICADO = 'CERTIFICADO', 'Certificado'
+        NOMINA = 'NOMINA', 'Pre-nómina'
 
     class Estado(models.TextChoices):
         PENDIENTE = 'PENDIENTE', 'Pendiente'
@@ -57,6 +58,7 @@ class Solicitud(models.Model):
     motivo = models.CharField(max_length=200, blank=True)
     fecha_desde = models.DateField(null=True, blank=True)
     fecha_hasta = models.DateField(null=True, blank=True)
+    periodo = models.CharField(max_length=7, blank=True)
     estado = models.CharField(max_length=10, choices=Estado.choices, default=Estado.PENDIENTE)
     motivo_rechazo = models.CharField(max_length=200, blank=True)
     fecha_solicitud = models.DateTimeField(auto_now_add=True)
@@ -77,6 +79,15 @@ class Nomina(models.Model):
         related_name='nominas',
     )
     periodo = models.CharField(max_length=7)  # '2026-09'
+    revisada_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='nominas_revisadas',
+    )
+    fecha_revision = models.DateTimeField(null=True, blank=True)
+    motivo_rechazo = models.CharField(max_length=200, blank=True)
     salario_bruto = models.DecimalField(max_digits=14, decimal_places=2)
     valor_bonificacion = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     valor_horas_extra = models.DecimalField(max_digits=14, decimal_places=2, default=0)

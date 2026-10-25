@@ -2,6 +2,9 @@ from datetime import date
 from decimal import Decimal
 from django.contrib import messages
 from django.http import HttpResponse
+from django.db.models import Sum, Value
+from django.db.models.functions import Coalesce
+from django.views.generic import DetailView
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse, reverse_lazy
 from django.views.generic import TemplateView, ListView, FormView, UpdateView, View
@@ -13,8 +16,10 @@ from .models import Nomina, HoraExtra, Solicitud, ConfiguracionBonificacion
 from .forms import HoraExtraForm, SolicitudForm, SolicitudAprobarForm, BonificacionForm, \
     SolicitudVacacionesForm
 from .forms import ReporteFiltroForm
-from .reportes import resumen_mensual
-from .services import calcular_horas_extra, calcular_nomina
+from .reportes import resumen_mensual, nombre_periodo
+from .services import (calcular_horas_extra, generar_prenomina, aceptar_prenomina,
+                      rechazar_prenomina)
+from .excepciones import NominaError
 from .pdf import generar_pdf_reporte
 
 
@@ -68,14 +73,21 @@ class NominaConsultarView(SoloNominaMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         periodo = self.request.GET.get('periodo', periodo_actual())
         usuario = self.request.user
-        nomina = Nomina.objects.filter(usuario=usuario, periodo=periodo).first()
+        nomina = Nomina.objects.filter(
+            usuario=usuario, periodo=periodo, estado=Nomina.Estado.ACEPTADA).first()
+        pendiente = Nomina.objects.filter(
+            usuario=usuario, periodo=periodo, estado=Nomina.Estado.PENDIENTE).exists()
 
         context.update({
-            'nomina': nomina,
+            'nomina': nomina, 'nomina_pendiente': pendiente,
             'periodo': periodo,
             'solicitudes': Solicitud.objects.filter(usuario=usuario)[:5],
             'form_solicitud': SolicitudForm(),
             'salario_base': usuario.salario_base,
+            'hoy': date.today(),
+            'nombre_periodo': nombre_periodo(periodo),
+            'ultimo_periodo_pagado': usuario.ultimo_periodo_pagado,
+            'ultimo_total_pagado': usuario.ultimo_total_pagado,
         })
         return context
 
@@ -202,26 +214,48 @@ class BonificacionesView(SoloGerenteMixin, FormView):
             for c in ConfiguracionBonificacion.objects.select_related('usuario')
         ]
         return context
-class CalculoNominaView( SoloGerenteMixin, TemplateView):
+class CalculoNominaView(SoloGerenteMixin, TemplateView):
     template_name = 'calculo_nomina.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         periodo = self.request.GET.get('periodo', periodo_actual())
-        context['periodo'] = periodo
-        context['nominas'] = Nomina.objects.filter(periodo=periodo).select_related('usuario')
+        nominas = Nomina.objects.filter(periodo=periodo).select_related(
+            'usuario', 'revisada_por').order_by('usuario__first_name', 'usuario__last_name')
+        estado_periodo = nominas.first().estado if nominas.exists() else None
+        primera = nominas.first()
+        context.update({
+            'periodo': periodo, 'nominas': nominas, 'estado_periodo': estado_periodo,
+            'puede_calcular': estado_periodo is None or estado_periodo == Nomina.Estado.RECHAZADA,
+            'motivo_rechazo': primera.motivo_rechazo if primera and estado_periodo == Nomina.Estado.RECHAZADA else '',
+            'fecha_revision': primera.fecha_revision if primera else None,
+            'revisada_por': primera.revisada_por if primera else None,
+            'hoy': date.today(),
+            'totales': nominas.aggregate(
+                salarios=Coalesce(Sum('salario_bruto'), Value(Decimal('0'))),
+                bonificaciones=Coalesce(Sum('valor_bonificacion'), Value(Decimal('0'))),
+                horas=Coalesce(Sum('valor_horas_extra'), Value(Decimal('0'))),
+                salud=Coalesce(Sum('deduccion_salud'), Value(Decimal('0'))),
+                pension=Coalesce(Sum('deduccion_pension'), Value(Decimal('0'))),
+                total=Coalesce(Sum('total_pagar'), Value(Decimal('0'))),
+            ),
+        })
         return context
 
     def post(self, request, *args, **kwargs):
-        periodo = request.POST.get('periodo', periodo_actual())
-        for usuario in Usuario.objects.filter(is_active=True):
-            calcular_nomina(usuario, periodo)
-        Auditoria.objects.create(
-            usuario=request.user,
-            accion=Auditoria.Accion.CALCULAR,
-            detalle='Calculó la nómina del período {0}'.format(periodo),
-        )
-        messages.success(request, 'Nómina del período {0} calculada.'.format(periodo))
+        form = ReporteFiltroForm(request.POST)
+        if not form.is_valid():
+            messages.error(request, form.errors['periodo'][0])
+            return redirect('calculo_nomina')
+        periodo = form.cleaned_data['periodo']
+        try:
+            generar_prenomina(periodo, request.user)
+        except NominaError as error:
+            messages.error(request, str(error))
+        else:
+            messages.success(request,
+                'Pre-nómina de {0} calculada y enviada al Auxiliar Administrativo para su aprobación.'.format(
+                    nombre_periodo(periodo)))
         return redirect(reverse('calculo_nomina') + '?periodo={0}'.format(periodo))
 
 
@@ -259,35 +293,67 @@ class BandejaAprobacionView(SoloAuxiliarMixin, ListView):
     context_object_name = 'solicitudes'
 
     def get_queryset(self):
-        return Solicitud.objects.select_related('usuario').filter(
-            estado=Solicitud.Estado.PENDIENTE)
+        return Solicitud.objects.select_related('usuario').filter(estado=Solicitud.Estado.PENDIENTE)
 
     def post(self, request, *args, **kwargs):
         solicitud = get_object_or_404(
-            Solicitud,
-            pk=request.POST.get('solicitud_id'),
-            estado=Solicitud.Estado.PENDIENTE,
-        )
-
+            Solicitud, pk=request.POST.get('solicitud_id'), estado=Solicitud.Estado.PENDIENTE)
         accion = request.POST.get('accion')
+        if accion not in ('aprobar', 'rechazar'):
+            messages.error(request, 'Acción no válida.')
+            return redirect('bandeja_aprobacion')
+        if solicitud.tipo == Solicitud.Tipo.NOMINA:
+            nombre = nombre_periodo(solicitud.periodo)
+            try:
+                if accion == 'aprobar':
+                    cantidad = aceptar_prenomina(solicitud, request.user)
+                    messages.success(request, 'Pre-nómina de {0} aceptada: {1} nóminas aplicadas.'.format(nombre, cantidad))
+                else:
+                    rechazar_prenomina(solicitud, request.user, request.POST.get('motivo_rechazo'))
+                    messages.success(request, 'Pre-nómina de {0} rechazada. El Gerente puede recalcularla.'.format(nombre))
+            except NominaError as error:
+                messages.error(request, str(error))
+            return redirect('bandeja_aprobacion')
+
         if accion == 'aprobar':
             solicitud.estado = Solicitud.Estado.ACEPTADA
             mensaje = 'Solicitud de {0} aprobada.'.format(solicitud.usuario.username)
-        elif accion == 'rechazar':
+        else:
             solicitud.estado = Solicitud.Estado.RECHAZADA
             solicitud.motivo_rechazo = request.POST.get('motivo_rechazo') or 'Sin motivo especificado'
             mensaje = 'Solicitud de {0} rechazada.'.format(solicitud.usuario.username)
-        else:
-            mensaje = 'Acción no válida.'
-
         solicitud.save()
         Auditoria.objects.create(
-            usuario=request.user,
-            accion=Auditoria.Accion.ACTUALIZAR,
+            usuario=request.user, accion=Auditoria.Accion.ACTUALIZAR,
             detalle='{0} la solicitud de {1} ({2})'.format(
-                solicitud.get_estado_display(),
-                solicitud.usuario.username,
-                solicitud.get_tipo_display()),
-        )
+                solicitud.get_estado_display(), solicitud.usuario.username, solicitud.get_tipo_display()))
         messages.success(request, mensaje)
         return redirect('bandeja_aprobacion')
+
+
+class PreNominaDetalleView(SoloAuxiliarMixin, DetailView):
+    model = Solicitud
+    template_name = 'prenomina_detalle.html'
+    context_object_name = 'solicitud'
+
+    def get_queryset(self):
+        return Solicitud.objects.filter(tipo=Solicitud.Tipo.NOMINA).select_related('usuario')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        solicitud = self.object
+        nominas = Nomina.objects.filter(periodo=solicitud.periodo).select_related('usuario').order_by(
+            'usuario__first_name', 'usuario__last_name')
+        context.update({
+            'nominas': nominas,
+            'nombre_periodo': nombre_periodo(solicitud.periodo),
+            'totales': nominas.aggregate(
+                salarios=Coalesce(Sum('salario_bruto'), Value(Decimal('0'))),
+                bonificaciones=Coalesce(Sum('valor_bonificacion'), Value(Decimal('0'))),
+                horas=Coalesce(Sum('valor_horas_extra'), Value(Decimal('0'))),
+                salud=Coalesce(Sum('deduccion_salud'), Value(Decimal('0'))),
+                pension=Coalesce(Sum('deduccion_pension'), Value(Decimal('0'))),
+                total=Coalesce(Sum('total_pagar'), Value(Decimal('0'))),
+            ),
+        })
+        return context

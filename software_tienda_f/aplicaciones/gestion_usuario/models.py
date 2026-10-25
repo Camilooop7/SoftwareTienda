@@ -13,6 +13,8 @@ class Usuario(AbstractUser):
     estado = models.CharField(max_length=10, choices=Estado.choices, default=Estado.ACTIVO)
     fecha_ingreso = models.DateField(null=True, blank=True)
     salario_base = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    ultimo_periodo_pagado = models.CharField(max_length=7, blank=True)
+    ultimo_total_pagado = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
     def __str__(self):
         return "{0} (ID: {1} - Identificacion: {2} - Estado: {3})".format(self.get_full_name() or self.username,
                                                                           self.pk, self.identificacion, self.estado)

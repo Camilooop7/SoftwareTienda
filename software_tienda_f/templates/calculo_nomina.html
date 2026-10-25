@@ -1,37 +1,78 @@
 {% extends 'index.html' %}
+{% load formatos %}
 {% block titulo %}Cálculo nómina{% endblock %}
 {% block mod_nomina %}abierto{% endblock %}
 {% block menu_calculo %}activo{% endblock %}
 {% block encabezado %}Cálculo nómina{% endblock %}
-
 {% block contenido %}
-<form method="post" class="filtros-auditoria">
-    {% csrf_token %}
+{% if estado_periodo == 'PENDIENTE' %}
+<div class="mensaje mensaje--info">Pre-nómina pendiente de aprobación del Auxiliar Administrativo.</div>
+{% elif estado_periodo == 'ACEPTADA' %}
+<div class="mensaje mensaje--success">Nómina aceptada el {{ fecha_revision|date:"d/m/Y H:i" }} por {{ revisada_por }}.</div>
+{% elif estado_periodo == 'RECHAZADA' %}
+<div class="mensaje mensaje--error">Pre-nómina rechazada: {{ motivo_rechazo }}. Puedes recalcularla.</div>
+{% endif %}
+<form method="get" class="filtros-auditoria">
     <div class="filtro filtro--fecha">
         <span class="filtro-titulo">Período</span>
-        <input type="month" name="periodo" value="{{ periodo }}" required
-               min="2020-01" max="{{ hoy|date:'Y-m' }}" id="input-periodo">
+        <input type="month" name="periodo" value="{{ periodo }}" required min="2020-01" max="{{ hoy|date:'Y-m' }}">
     </div>
     <div class="filtros-acciones">
-        <button type="submit" class="btn btn-morado">Calcular</button>
+        <button type="submit" class="btn btn-linea">Ver período</button>
     </div>
 </form>
-<table>
-    <tr>
-        <th>Empleado</th><th>Salario bruto</th><th>Bonificaciones</th>
-        <th>Horas extra</th><th>Deducciones (8%)</th><th>Total a pagar</th>
-    </tr>
-    {% for n in nominas %}
-    <tr>
-        <td>{{ n.usuario.get_full_name|default:n.usuario.username }}</td>
-        <td>${{ n.salario_bruto }}</td>
-        <td>${{ n.valor_bonificacion }}</td>
-        <td>${{ n.valor_horas_extra }}</td>
-        <td>-${{ n.deducciones }}</td>
-        <td><strong>${{ n.total_pagar }}</strong></td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="6">Sin nómina calculada para {{ periodo }} — presiona Calcular.</td></tr>
-    {% endfor %}
+<form method="post" class="filtros-auditoria">
+    {% csrf_token %}
+    <input type="hidden" name="periodo" value="{{ periodo }}">
+    <div class="filtros-acciones">
+        <button type="submit" class="btn btn-morado" {% if not puede_calcular %}disabled title="Solo puedes calcular si no existe una nómina o si fue rechazada."{% endif %}>Calcular</button>
+    </div>
+</form>
+<table class="tabla-reporte">
+    <thead>
+        <tr>
+            <th>Empleado</th>
+            <th>Salario bruto</th>
+            <th>Bonificaciones</th>
+            <th>Horas extra</th>
+            <th>Salud (4%)</th>
+            <th>Pensión (4%)</th>
+            <th>Deducciones (8%)</th>
+            <th>Total a pagar</th>
+            <th>Estado</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for n in nominas %}
+        <tr>
+            <td>{{ n.usuario.get_full_name|default:n.usuario.username }}</td>
+            <td class="monto">{{ n.salario_bruto|moneda }}</td>
+            <td class="monto">{{ n.valor_bonificacion|moneda }}</td>
+            <td class="monto">{{ n.valor_horas_extra|moneda }}</td>
+            <td class="monto">{{ n.deduccion_salud|moneda }}</td>
+            <td class="monto">{{ n.deduccion_pension|moneda }}</td>
+            <td class="monto">{{ n.deducciones|moneda }}</td>
+            <td class="monto">{{ n.total_pagar|moneda }}</td>
+            <td>{{ n.get_estado_display }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="9" class="estado-vacio">Sin nómina calculada para {{ periodo }}.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    <tfoot>
+        <tr class="fila-total">
+            <td>Totales</td>
+            <td class="monto">{{ totales.salarios|moneda }}</td>
+            <td class="monto">{{ totales.bonificaciones|moneda }}</td>
+            <td class="monto">{{ totales.horas|moneda }}</td>
+            <td class="monto">{{ totales.salud|moneda }}</td>
+            <td class="monto">{{ totales.pension|moneda }}</td>
+            <td></td>
+            <td class="monto">{{ totales.total|moneda }}</td>
+            <td></td>
+        </tr>
+    </tfoot>
 </table>
 {% endblock %}

@@ -1,0 +1,65 @@
+{% extends 'index.html' %}
+{% load formatos %}
+{% block titulo %}Pre-nómina {{ nombre_periodo }}{% endblock %}
+{% block mod_nomina %}abierto{% endblock %}
+{% block menu_bandeja %}activo{% endblock %}
+{% block encabezado %}Pre-nómina {{ nombre_periodo }}{% endblock %}
+{% block contenido %}
+<p>
+    Estado: {{ solicitud.get_estado_display }}
+    {% if solicitud.motivo_rechazo %} — {{ solicitud.motivo_rechazo }}{% endif %}
+</p>
+<table class="tabla-reporte">
+    <thead>
+        <tr>
+            <th>Empleado</th>
+            <th>Salario base</th>
+            <th>Bonificación</th>
+            <th>Horas extra</th>
+            <th>Salud (4%)</th>
+            <th>Pensión (4%)</th>
+            <th>Total a pagar</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for n in nominas %}
+        <tr>
+            <td>{{ n.usuario.get_full_name|default:n.usuario.username }}</td>
+            <td class="monto">{{ n.salario_bruto|moneda }}</td>
+            <td class="monto">{{ n.valor_bonificacion|moneda }}</td>
+            <td class="monto">{{ n.valor_horas_extra|moneda }}</td>
+            <td class="monto">{{ n.deduccion_salud|moneda }}</td>
+            <td class="monto">{{ n.deduccion_pension|moneda }}</td>
+            <td class="monto">{{ n.total_pagar|moneda }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7" class="estado-vacio">Sin nóminas para este período.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    <tfoot>
+        <tr class="fila-total">
+            <td>Totales</td>
+            <td class="monto">{{ totales.salarios|moneda }}</td>
+            <td class="monto">{{ totales.bonificaciones|moneda }}</td>
+            <td class="monto">{{ totales.horas|moneda }}</td>
+            <td class="monto">{{ totales.salud|moneda }}</td>
+            <td class="monto">{{ totales.pension|moneda }}</td>
+            <td class="monto">{{ totales.total|moneda }}</td>
+        </tr>
+    </tfoot>
+</table>
+{% if solicitud.estado == 'PENDIENTE' %}
+<form method="post" action="{% url 'bandeja_aprobacion' %}" class="form-accion">
+    {% csrf_token %}
+    <input type="hidden" name="solicitud_id" value="{{ solicitud.pk }}">
+    <input type="text" name="motivo_rechazo" maxlength="200" placeholder="Motivo del rechazo">
+    <button type="submit" name="accion" value="aprobar" class="btn btn-linea">✓ Aprobar</button>
+    <button type="submit" name="accion" value="rechazar" class="btn btn-rojo">✗ Rechazar</button>
+</form>
+{% endif %}
+<p>
+    <a class="btn btn-linea" href="{% url 'bandeja_aprobacion' %}">Volver a la bandeja</a>
+</p>
+{% endblock %}
