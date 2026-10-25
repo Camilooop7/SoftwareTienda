@@ -38,6 +38,8 @@
         <span class="valor">{{ nomina.deducciones|default:0|moneda }}</span>
         <span class="etiqueta">Deducciones</span>
     </div>
+    <div class="ficha ficha--violeta"><span class="valor">{% if nomina %}{{ nomina.valor_bonificacion|moneda }}{% else %}—{% endif %}</span><span class="etiqueta">Bonificaciones</span></div>
+    <div class="ficha ficha--cian"><span class="valor">{% if nomina %}{{ nomina.valor_horas_extra|moneda }}{% else %}—{% endif %}</span><span class="etiqueta">Horas extra</span></div>
     <div class="ficha ficha--cian">
         <span class="valor">{% if nomina %}{{ nomina.total_pagar|moneda }}{% else %}—{% endif %}</span>
         <span class="etiqueta">Total a pagar</span>
@@ -46,6 +48,10 @@
         <span class="valor">{% if ultimo_periodo_pagado %}{{ ultimo_total_pagado|moneda }}{% else %}Sin pagos aceptados{% endif %}</span>
         <span class="etiqueta">Último pago{% if ultimo_periodo_pagado %}: {{ ultimo_periodo_pagado }}{% endif %}</span>
     </div>
+</div>
+<div class="fichas">
+    <div class="ficha ficha--violeta"><span class="valor">{{ user.get_frecuencia_pago_display }}</span><span class="etiqueta">Frecuencia de pago</span></div>
+    <div class="ficha ficha--cian"><span class="valor">{{ user.get_metodo_pago_display }}{% if user.metodo_pago == 'TRANSFERENCIA' %} · {{ user.banco }} · ****{{ user.numero_cuenta|slice:"-4:" }}{% endif %}</span><span class="etiqueta">Método de pago</span></div>
 </div>
 
 <h3 style="margin:18px 0 10px;">Solicitar certificado</h3>
@@ -60,15 +66,17 @@
 </form>
 
 <table style="margin-top:24px;">
-    <tr><th>Solicitud</th><th>Fecha</th><th>Estado</th></tr>
+    <tr><th>Solicitud</th><th>Fecha</th><th>Estado</th><th>Respuesta</th><th>Motivo del rechazo</th></tr>
     {% for s in solicitudes %}
     <tr>
         <td>{{ s.get_tipo_display }}</td>
         <td>{{ s.fecha_desde|default:s.fecha_solicitud|date:"d/m/Y" }}</td>
         <td>{{ s.get_estado_display }}</td>
+        <td>{% if s.fecha_respuesta %}{{ s.fecha_respuesta|date:"d/m/Y H:i" }}{% else %}—{% endif %}</td>
+        <td>{{ s.motivo_rechazo|default:"—" }}</td>
     </tr>
     {% empty %}
-    <tr><td colspan="3">No tienes solicitudes.</td></tr>
+    <tr><td colspan="5">No tienes solicitudes.</td></tr>
     {% endfor %}
 </table>
 {% endblock %}

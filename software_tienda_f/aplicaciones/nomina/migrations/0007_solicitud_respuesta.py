@@ -1,0 +1,11 @@
+from django.conf import settings
+from django.db import migrations, models
+import django.db.models.deletion
+
+
+class Migration(migrations.Migration):
+    dependencies = [('nomina', '0006_validaciones_nomina'), migrations.swappable_dependency(settings.AUTH_USER_MODEL)]
+    operations = [
+        migrations.AddField('solicitud', 'fecha_respuesta', models.DateTimeField(blank=True, null=True)),
+        migrations.AddField('solicitud', 'respondida_por', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='solicitudes_respondidas', to=settings.AUTH_USER_MODEL)),
+    ]

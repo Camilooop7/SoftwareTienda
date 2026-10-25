@@ -4,6 +4,7 @@ from decimal import Decimal
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
+from django.db import transaction
 from aplicaciones.gestion_usuario.models import Auditoria, Usuario
 from .models import HoraExtra, Nomina, ConfiguracionBonificacion, Solicitud
 from .excepciones import (
@@ -11,6 +12,7 @@ from .excepciones import (
     PreNominaNoPendienteError, SinEmpleadosActivosError,
 )
 from .reportes import nombre_periodo
+from .notificaciones import notificar_respuesta_solicitud
 from .templatetags.formatos import formatear_moneda
 
 JORNADA_DIARIA = Decimal('8.4')
@@ -134,7 +136,9 @@ def _obtener_prenomina_pendiente(solicitud):
 def aceptar_prenomina(solicitud, auxiliar):
     solicitud = _obtener_prenomina_pendiente(solicitud)
     solicitud.estado = Solicitud.Estado.ACEPTADA
-    solicitud.save(update_fields=['estado'])
+    solicitud.fecha_respuesta = timezone.now()
+    solicitud.respondida_por = auxiliar
+    solicitud.save(update_fields=['estado', 'fecha_respuesta', 'respondida_por'])
     nominas = Nomina.objects.select_for_update().filter(
         solicitud=solicitud, estado=Nomina.Estado.PENDIENTE)
     fecha_revision = timezone.now()
@@ -154,6 +158,7 @@ def aceptar_prenomina(solicitud, auxiliar):
         accion=Auditoria.Accion.ACTUALIZAR,
         detalle='Aceptó la pre-nómina de {0}'.format(solicitud.periodo),
     )
+    transaction.on_commit(lambda: notificar_respuesta_solicitud(solicitud))
     return cantidad
 
 
@@ -166,7 +171,9 @@ def rechazar_prenomina(solicitud, auxiliar, motivo):
     motivo = motivo[:200]
     solicitud.estado = Solicitud.Estado.RECHAZADA
     solicitud.motivo_rechazo = motivo
-    solicitud.save(update_fields=['estado', 'motivo_rechazo'])
+    solicitud.fecha_respuesta = timezone.now()
+    solicitud.respondida_por = auxiliar
+    solicitud.save(update_fields=['estado', 'motivo_rechazo', 'fecha_respuesta', 'respondida_por'])
     fecha_revision = timezone.now()
     Nomina.objects.select_for_update().filter(
         solicitud=solicitud, estado=Nomina.Estado.PENDIENTE).update(
@@ -180,3 +187,4 @@ def rechazar_prenomina(solicitud, auxiliar, motivo):
         accion=Auditoria.Accion.ACTUALIZAR,
         detalle='Rechazó la pre-nómina de {0}: {1}'.format(solicitud.periodo, motivo),
     )
+    transaction.on_commit(lambda: notificar_respuesta_solicitud(solicitud))

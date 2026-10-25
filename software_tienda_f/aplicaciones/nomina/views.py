@@ -4,6 +4,8 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.db.models import Sum, Value
 from django.db.models.functions import Coalesce
+from django.db import transaction
+from django.utils import timezone
 from django.views.generic import DetailView
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse, reverse_lazy
@@ -22,6 +24,7 @@ from .reportes import resumen_mensual, nombre_periodo
 from .services import (calcular_horas_extra, generar_prenomina, aceptar_prenomina,
                       rechazar_prenomina)
 from .excepciones import NominaError
+from .notificaciones import notificar_respuesta_solicitud
 from .pdf import generar_pdf_reporte
 from ..validaciones import normalizar_espacios, validar_texto_seguro
 
@@ -394,7 +397,10 @@ class BandejaAprobacionView(SoloAuxiliarMixin, ListView):
             solicitud.estado = Solicitud.Estado.RECHAZADA
             solicitud.motivo_rechazo = motivo_rechazo or 'Sin motivo especificado'
             mensaje = 'Solicitud de {0} rechazada.'.format(solicitud.usuario.username)
+        solicitud.fecha_respuesta = timezone.now()
+        solicitud.respondida_por = request.user
         solicitud.save()
+        transaction.on_commit(lambda: notificar_respuesta_solicitud(solicitud))
         Auditoria.objects.create(
             usuario=request.user, accion=Auditoria.Accion.ACTUALIZAR,
             detalle='{0} la solicitud de {1} ({2})'.format(

@@ -6,6 +6,14 @@ from django.db.models import Q
 
 class Usuario(AbstractUser):
 
+    class FrecuenciaPago(models.TextChoices):
+        MENSUAL = 'MENSUAL', 'Mensual'
+
+    class MetodoPago(models.TextChoices):
+        TRANSFERENCIA = 'TRANSFERENCIA', 'Transferencia bancaria'
+        EFECTIVO = 'EFECTIVO', 'Efectivo'
+        CHEQUE = 'CHEQUE', 'Cheque'
+
     class Estado(models.TextChoices):
         ACTIVO = 'ACTIVO', 'Activo'
         INACTIVO = 'INACTIVO', 'Inactivo'
@@ -23,6 +31,10 @@ class Usuario(AbstractUser):
     )
     ultimo_periodo_pagado = models.CharField(max_length=7, blank=True)
     ultimo_total_pagado = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    frecuencia_pago = models.CharField(max_length=10, choices=FrecuenciaPago.choices, default=FrecuenciaPago.MENSUAL)
+    metodo_pago = models.CharField(max_length=15, choices=MetodoPago.choices, default=MetodoPago.TRANSFERENCIA)
+    banco = models.CharField(max_length=60, blank=True)
+    numero_cuenta = models.CharField(max_length=20, blank=True)
 
     class Meta:
         verbose_name = 'user'

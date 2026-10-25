@@ -78,7 +78,8 @@ class Command(BaseCommand):
                         solicitud = generar_prenomina(periodo, gerente)
                     aceptar_prenomina(solicitud, auxiliar)
                     Solicitud.objects.filter(pk=solicitud.pk).update(
-                        fecha_solicitud=dia_solicitud)
+                        fecha_solicitud=dia_solicitud, fecha_respuesta=revision,
+                        respondida_por=auxiliar)
                     Nomina.objects.filter(solicitud=solicitud).update(
                         fecha_revision=revision)
                 except NominaError:
@@ -142,6 +143,16 @@ class Command(BaseCommand):
                 ingreso_local = self._aware_datetime(ingreso, time(0))
                 Usuario.objects.filter(pk=usuario.pk).update(date_joined=ingreso_local)
             usuario.groups.set([grupos[rol]])
+            if i % 5 == 0:
+                usuario.metodo_pago = Usuario.MetodoPago.EFECTIVO
+                usuario.banco = ''
+                usuario.numero_cuenta = ''
+            else:
+                usuario.metodo_pago = Usuario.MetodoPago.TRANSFERENCIA
+                usuario.banco = ('Banco Andino', 'Banco Nacional', 'Banco Central')[i % 3]
+                usuario.numero_cuenta = str(100000000000 + i * 73129)
+            usuario.frecuencia_pago = Usuario.FrecuenciaPago.MENSUAL
+            usuario.save(update_fields=['metodo_pago', 'banco', 'numero_cuenta', 'frecuencia_pago'])
             resultado.append(usuario)
         if len(resultado) != 11:
             resultado = list(Usuario.objects.filter(username__in=[
@@ -208,7 +219,7 @@ class Command(BaseCommand):
             fecha = self._aware_datetime(inicio - timedelta(days=8), time(9))
             self._crear_solicitud(usuario, Solicitud.Tipo.VACACIONES,
                                   inicio, inicio + timedelta(days=3 + i),
-                                  'Descanso familiar', Solicitud.Estado.ACEPTADA, '', fecha)
+                                  'Descanso familiar', Solicitud.Estado.ACEPTADA, '', fecha, usuarios[1])
         for i, usuario in enumerate(usuarios[3:10]):
             inicio = hoy + timedelta(days=10 + i * 5) if i >= 4 else fechas[i]
             pendiente = i >= 4
@@ -218,19 +229,27 @@ class Command(BaseCommand):
             fecha = self._aware_datetime(inicio - timedelta(days=3), time(11))
             self._crear_solicitud(
                 usuario, Solicitud.Tipo.CERTIFICADO, inicio, inicio,
-                self.rng.choice(MOTIVOS_CERTIFICADO), estado, rechazo, fecha,
+                self.rng.choice(MOTIVOS_CERTIFICADO), estado, rechazo, fecha, usuarios[1],
             )
 
     @staticmethod
-    def _crear_solicitud(usuario, tipo, desde, hasta, motivo, estado, rechazo, fecha):
+    def _crear_solicitud(usuario, tipo, desde, hasta, motivo, estado, rechazo, fecha, respondida_por):
         existente = Solicitud.objects.filter(
             usuario=usuario, tipo=tipo, fecha_desde=desde, fecha_hasta=hasta,
         ).first()
         if existente:
+            if existente.estado != Solicitud.Estado.PENDIENTE:
+                Solicitud.objects.filter(pk=existente.pk).update(
+                    fecha_solicitud=fecha,
+                    fecha_respuesta=fecha + timedelta(days=1),
+                    respondida_por=respondida_por,
+                )
             return
         solicitud = Solicitud.objects.create(
             usuario=usuario, tipo=tipo, fecha_desde=desde, fecha_hasta=hasta,
             motivo=motivo, estado=estado, motivo_rechazo=rechazo,
+            fecha_respuesta=fecha + timedelta(days=1) if estado != Solicitud.Estado.PENDIENTE else None,
+            respondida_por=respondida_por if estado != Solicitud.Estado.PENDIENTE else None,
         )
         Solicitud.objects.filter(pk=solicitud.pk).update(fecha_solicitud=fecha)
 

@@ -37,6 +37,8 @@ class BaseGestionUsuariosT61(TestCase):
             "fecha_ingreso": "2020-01-15",
             "salario_base": "1500000",
             "estado": "ACTIVO",
+            "frecuencia_pago": "MENSUAL",
+            "metodo_pago": "EFECTIVO",
             "groups": [str(rol.pk) for rol in roles],
             "password1": "ClaveSegura1",
             "password2": "ClaveSegura1",

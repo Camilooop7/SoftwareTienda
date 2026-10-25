@@ -20,6 +20,7 @@ class ValidacionesGestionUsuarioTest(TestCase):
             'last_name': 'Pérez Gómez', 'email': 'persona@example.com',
             'identificacion': '9160616', 'fecha_ingreso': '2020-01-15',
             'salario_base': '1500000,50', 'estado': 'ACTIVO',
+            'frecuencia_pago': 'MENSUAL', 'metodo_pago': 'EFECTIVO',
             'groups': [str(self.rol.pk)], 'password1': 'ClaveSegura#2026',
             'password2': 'ClaveSegura#2026',
         }

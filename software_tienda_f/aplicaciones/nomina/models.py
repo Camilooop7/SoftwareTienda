@@ -81,6 +81,8 @@ class Solicitud(models.Model):
     estado = models.CharField(max_length=10, choices=Estado.choices, default=Estado.PENDIENTE)
     motivo_rechazo = models.CharField(max_length=200, blank=True)
     fecha_solicitud = models.DateTimeField(auto_now_add=True)
+    fecha_respuesta = models.DateTimeField(null=True, blank=True)
+    respondida_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='solicitudes_respondidas')
 
     class Meta:
         ordering = ['-fecha_solicitud']

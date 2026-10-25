@@ -19,7 +19,8 @@ class GestionUsuariosTest(TestCase):
             'username': 'vendedor-t16', 'first_name': 'Violeta', 'last_name': 'Prueba',
             'email': 'vendedor-t16@example.com', 'identificacion': '9160616',
             'fecha_ingreso': '2026-01-15', 'salario_base': '1500000',
-            'estado': 'ACTIVO', 'groups': [self.vendedor_group.pk],
+            'estado': 'ACTIVO', 'frecuencia_pago': 'MENSUAL',
+            'metodo_pago': 'EFECTIVO', 'groups': [self.vendedor_group.pk],
             'password1': 'ClaveSegura#2026', 'password2': 'ClaveSegura#2026',
         })
         self.assertEqual(respuesta.status_code, 302)

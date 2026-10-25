@@ -80,6 +80,8 @@
         <div class="valor">{% if usuario.ultimo_periodo_pagado %}{{ usuario.ultimo_total_pagado|moneda }}{% else %}Sin pagos aceptados{% endif %}</div>
         <div class="etiqueta">Último pago{% if usuario.ultimo_periodo_pagado %}: {{ usuario.ultimo_periodo_pagado }}{% endif %}</div>
     </div>
+    <div class="ficha ficha--cian"><div class="valor">{{ usuario.get_frecuencia_pago_display }}</div><div class="etiqueta">Frecuencia de pago</div></div>
+    <div class="ficha ficha--cian"><div class="valor">{{ usuario.get_metodo_pago_display }}{% if usuario.metodo_pago == 'TRANSFERENCIA' %} · {{ usuario.banco }} · ****{{ usuario.numero_cuenta|slice:"-4:" }}{% endif %}</div><div class="etiqueta">Método de pago</div></div>
 
 </div>
 
@@ -92,3 +94,4 @@
     {% endif %}
 </div>
 {% endblock %}
+{% comment %}Datos de pago del empleado{% endcomment %}

@@ -18,6 +18,10 @@ from aplicaciones.validaciones import validar_texto_seguro
 
 
 class UsuarioValidacionMixin(forms.Form):
+    frecuencia_pago = forms.ChoiceField(choices=Usuario.FrecuenciaPago.choices, label='Frecuencia de pago', initial=Usuario.FrecuenciaPago.MENSUAL)
+    metodo_pago = forms.ChoiceField(choices=Usuario.MetodoPago.choices, label='Método de pago', initial=Usuario.MetodoPago.TRANSFERENCIA)
+    banco = forms.CharField(required=False, max_length=60, label='Banco', widget=forms.TextInput(attrs={'data-solo': 'letras', 'maxlength': '60'}))
+    numero_cuenta = forms.CharField(required=False, max_length=20, label='Número de cuenta', widget=forms.TextInput(attrs={'data-solo': 'numeros', 'maxlength': '20', 'inputmode': 'numeric'}))
     email = forms.EmailField(
         required=True,
         error_messages={
@@ -147,12 +151,43 @@ class UsuarioValidacionMixin(forms.Form):
             raise ValidationError('Selecciona al menos un rol para el usuario.')
         return grupos
 
+    def clean(self):
+        cleaned = super().clean()
+        metodo = cleaned.get('metodo_pago')
+        banco = cleaned.get('banco', '')
+        cuenta = cleaned.get('numero_cuenta', '')
+        if metodo == Usuario.MetodoPago.TRANSFERENCIA:
+            if not banco:
+                self.add_error('banco', 'Indica el banco para pagos por transferencia.')
+            else:
+                banco = normalizar_espacios(banco)
+                try:
+                    validar_solo_letras(banco, 'El banco')
+                    if not 3 <= len(banco) <= 60:
+                        raise ValidationError('El banco debe tener entre 3 y 60 caracteres.')
+                    cleaned['banco'] = banco
+                except ValidationError as error:
+                    self.add_error('banco', error)
+            if not cuenta:
+                self.add_error('numero_cuenta', 'Indica el número de cuenta para pagos por transferencia.')
+            else:
+                try:
+                    validar_solo_digitos(cuenta, 'El número de cuenta')
+                    if not 6 <= len(cuenta) <= 20:
+                        raise ValidationError('El número de cuenta debe tener entre 6 y 20 dígitos.')
+                except ValidationError as error:
+                    self.add_error('numero_cuenta', error)
+        else:
+            cleaned['banco'] = ''
+            cleaned['numero_cuenta'] = ''
+        return cleaned
+
 
 class UsuarioCrearForm(UsuarioValidacionMixin, UserCreationForm):
     class Meta(UserCreationForm.Meta):
         model = Usuario
         fields = ['username', 'first_name', 'last_name', 'email', 'identificacion',
-                  'fecha_ingreso', 'salario_base', 'estado', 'groups']
+                  'fecha_ingreso', 'salario_base', 'frecuencia_pago', 'metodo_pago', 'banco', 'numero_cuenta', 'estado', 'groups']
         labels = {
             'username': 'Nombre de usuario', 'first_name': 'Nombres',
             'last_name': 'Apellidos', 'email': 'Correo electrónico',
@@ -180,7 +215,7 @@ class UsuarioActualizarForm(UsuarioValidacionMixin, forms.ModelForm):
     class Meta:
         model = Usuario
         fields = ['username', 'first_name', 'last_name', 'email', 'identificacion',
-                  'fecha_ingreso', 'salario_base', 'estado', 'groups']
+                  'fecha_ingreso', 'salario_base', 'frecuencia_pago', 'metodo_pago', 'banco', 'numero_cuenta', 'estado', 'groups']
         labels = UsuarioCrearForm.Meta.labels
         help_texts = {'username': ' ', 'groups': ''}
         widgets = UsuarioCrearForm.Meta.widgets

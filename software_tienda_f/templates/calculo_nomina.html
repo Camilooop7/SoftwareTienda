@@ -32,6 +32,7 @@
     <thead>
         <tr>
             <th>Empleado</th>
+            <th>Método de pago</th>
             <th>Salario bruto</th>
             <th>Bonificaciones</th>
             <th>Horas extra</th>
@@ -46,6 +47,7 @@
         {% for n in nominas %}
         <tr>
             <td>{{ n.usuario.get_full_name|default:n.usuario.username }}</td>
+            <td>{{ n.usuario.get_metodo_pago_display }}</td>
             <td class="monto">{{ n.salario_bruto|moneda }}</td>
             <td class="monto">{{ n.valor_bonificacion|moneda }}</td>
             <td class="monto">{{ n.valor_horas_extra|moneda }}</td>
@@ -57,13 +59,14 @@
         </tr>
         {% empty %}
         <tr>
-            <td colspan="9" class="estado-vacio">Sin nómina calculada para {{ periodo }}.</td>
+            <td colspan="10" class="estado-vacio">Sin nómina calculada para {{ periodo }}.</td>
         </tr>
         {% endfor %}
     </tbody>
     <tfoot>
         <tr class="fila-total">
             <td>Totales</td>
+            <td></td>
             <td class="monto">{{ totales.salarios|moneda }}</td>
             <td class="monto">{{ totales.bonificaciones|moneda }}</td>
             <td class="monto">{{ totales.horas|moneda }}</td>

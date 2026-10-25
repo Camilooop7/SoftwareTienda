@@ -38,16 +38,18 @@
 </form>
 
 <table>
-    <tr><th>Tipo</th><th>Motivo</th><th>Fecha</th><th>Estado</th></tr>
+    <tr><th>Tipo</th><th>Motivo</th><th>Fecha</th><th>Estado</th><th>Respuesta</th><th>Motivo del rechazo</th></tr>
     {% for s in solicitudes %}
     <tr>
         <td>{{ s.get_tipo_display }}</td>
         <td>{{ s.motivo|default:"—" }}</td>
         <td>{{ s.fecha_desde|default:s.fecha_solicitud|date:"d/m/Y" }}</td>
         <td>{{ s.get_estado_display }}</td>
+        <td>{% if s.fecha_respuesta %}{{ s.fecha_respuesta|date:"d/m/Y H:i" }}{% else %}—{% endif %}</td>
+        <td>{{ s.motivo_rechazo|default:"—" }}</td>
     </tr>
     {% empty %}
-    <tr><td colspan="4">Sin movimientos.</td></tr>
+    <tr><td colspan="6">Sin movimientos.</td></tr>
     {% endfor %}
 </table>
 

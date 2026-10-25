@@ -30,7 +30,8 @@ class IntegracionNominaTest(TestCase):
             'username': usuario, 'first_name': nombre, 'last_name': 'Vendedora',
             'email': usuario + '@example.com', 'identificacion': '12345678',
             'fecha_ingreso': '2020-01-15', 'salario_base': '2000000',
-            'estado': 'ACTIVO', 'groups': [self.grupos['Vendedor'].pk],
+            'estado': 'ACTIVO', 'frecuencia_pago': 'MENSUAL',
+            'metodo_pago': 'EFECTIVO', 'groups': [self.grupos['Vendedor'].pk],
             'password1': 'Clave#2026', 'password2': 'Clave#2026',
         }, follow=True)
         self.assertEqual(respuesta.status_code, 200)
