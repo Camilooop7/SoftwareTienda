@@ -2,7 +2,7 @@ import re
 from datetime import date
 
 from django import forms
-from .models import HoraExtra, Solicitud, ConfiguracionBonificacion, Notificacion
+from .models import HoraExtra, Solicitud, ConfiguracionBonificacion
 from ..gestion_usuario.models import Usuario
 
 
@@ -92,9 +92,3 @@ class BonificacionForm(forms.ModelForm):
 
     def validate_unique(self):
         pass
-class NotificacionForm(forms.ModelForm):
-    class Meta:
-        model = Notificacion
-        fields = ['titulo', 'contenido', 'activa']
-        labels = {'titulo': 'Título', 'contenido': 'Contenido', 'activa': 'Mostrar a todos'}
-        widgets = {'contenido': forms.Textarea(attrs={'rows': 4})}

@@ -85,8 +85,6 @@
             </div>
 
 
-            <div style="display:flex; align-items:center;">
-                <div class="campanita"><span class="campana-icono" title="Notificaciones">🔔{% if notificacion_global and notificacion_global.contenido %}<span class="campanita-badge"></span>{% endif %}</span><div class="campanita-panel">{% if notificacion_global and notificacion_global.contenido %}<strong>{{ notificacion_global.titulo }}</strong><p>{{ notificacion_global.contenido|linebreaksbr }}</p><small>Actualizada {{ notificacion_global.fecha_actualizacion|date:"d/m/Y H:i" }}</small>{% else %}<small>No hay notificaciones.</small>{% endif %}{% if user.es_gerente %}<p><a href="{% url 'notificacion_editar' %}">Editar notificación</a></p>{% endif %}</div></div>
             <div class="tarjeta-usuario">
 
                 <div class="avatar">
@@ -103,7 +101,6 @@
                     </div>
                 </div>
 
-            </div>
             </div>
 
         </div>

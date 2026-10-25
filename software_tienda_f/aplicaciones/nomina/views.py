@@ -9,8 +9,8 @@ from ..gestion_usuario.models import Auditoria, Usuario
 from ..gestion_usuario.views import (
     SoloGerenteMixin, SoloAuxiliarMixin, SoloNominaMixin, SoloGerenteOAuxiliarMixin,
 )
-from .models import Nomina, HoraExtra, Solicitud, ConfiguracionBonificacion, Notificacion
-from .forms import HoraExtraForm, SolicitudForm, SolicitudAprobarForm, BonificacionForm, NotificacionForm, \
+from .models import Nomina, HoraExtra, Solicitud, ConfiguracionBonificacion
+from .forms import HoraExtraForm, SolicitudForm, SolicitudAprobarForm, BonificacionForm, \
     SolicitudVacacionesForm
 from .forms import ReporteFiltroForm
 from .reportes import resumen_mensual
@@ -291,23 +291,3 @@ class BandejaAprobacionView(SoloAuxiliarMixin, ListView):
         )
         messages.success(request, mensaje)
         return redirect('bandeja_aprobacion')
-class NotificacionEditarView( SoloGerenteMixin, UpdateView):
-    model = Notificacion
-    form_class = NotificacionForm
-    template_name = 'notificacion_editar.html'
-    success_url = reverse_lazy('perfil_actual')
-
-    def get_object(self, queryset=None):
-        notif = Notificacion.objects.first()
-        if not notif:
-            notif = Notificacion.objects.create(
-                titulo='Bienvenidos',
-                contenido='',
-                actualizada_por=self.request.user,
-            )
-        return notif
-
-    def form_valid(self, form):
-        form.instance.actualizada_por = self.request.user
-        messages.success(self.request, 'Notificación actualizada para todos.')
-        return super().form_valid(form)

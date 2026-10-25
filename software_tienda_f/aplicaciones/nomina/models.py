@@ -91,18 +91,3 @@ class Nomina(models.Model):
         ordering = ['-periodo']
 
 
-class Notificacion(models.Model):
-    """La campanita: contenido global que el Gerente edita y todos ven."""
-    titulo = models.CharField(max_length=100, default='Notificación')
-    contenido = models.TextField(blank=True)
-    activa = models.BooleanField(default=True)
-    fecha_actualizacion = models.DateTimeField(auto_now=True)
-    actualizada_por = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name='notificaciones_editadas',
-    )
-
-    class Meta:
-        ordering = ['-fecha_actualizacion']

@@ -293,33 +293,3 @@ class ReportePDFViewTest(TestCase):
         self.assertTrue(generar_pdf_reporte(resumen_mensual('2026-09'), self.gerente).startswith(b'%PDF'))
 
 
-from .models import Notificacion
-
-
-class NotificacionEditarViewTest(TestCase):
-    def setUp(self):
-        self.gerente_group, _ = Group.objects.get_or_create(name='Gerente')
-        self.vendedor_group, _ = Group.objects.get_or_create(name='Vendedor')
-        self.gerente = Usuario.objects.create_user(
-            username='notif-gerente', email='notif-gerente@example.com', password='ClaveSegura#2026')
-        self.vendedor = Usuario.objects.create_user(
-            username='notif-vendedor', email='notif-vendedor@example.com', password='ClaveSegura#2026')
-        self.gerente.groups.add(self.gerente_group)
-        self.vendedor.groups.add(self.vendedor_group)
-
-    def test_gerente_edita_notificacion_y_se_muestra_en_reporte(self):
-        self.client.force_login(self.gerente)
-        url = reverse('notificacion_editar')
-        self.assertEqual(self.client.get(url).status_code, 200)
-        respuesta = self.client.post(url, {
-            'titulo': 'Aviso de prueba', 'contenido': 'Contenido global visible', 'activa': 'on',
-        })
-        self.assertEqual(respuesta.status_code, 302)
-        self.assertTrue(Notificacion.objects.filter(
-            titulo='Aviso de prueba', contenido='Contenido global visible', activa=True).exists())
-        respuesta = self.client.get(reverse('reporte_mensual'))
-        self.assertContains(respuesta, 'Contenido global visible')
-
-    def test_vendedor_no_puede_editar_notificacion(self):
-        self.client.force_login(self.vendedor)
-        self.assertEqual(self.client.get(reverse('notificacion_editar')).status_code, 403)
