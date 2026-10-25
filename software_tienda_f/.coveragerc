@@ -1,0 +1,14 @@
+[run]
+source = aplicaciones
+branch = True
+omit =
+    */migrations/*
+    */tests/*
+    */__init__.py
+
+[report]
+show_missing = True
+skip_covered = False
+
+[html]
+directory = htmlcov

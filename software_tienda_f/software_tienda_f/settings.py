@@ -43,8 +43,9 @@ if EXTRA_HOST:
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+    COOKIES_SEGURAS = os.getenv("COOKIES_SEGURAS", "True").lower() in ("1", "true", "yes")
+    SESSION_COOKIE_SECURE = COOKIES_SEGURAS
+    CSRF_COOKIE_SECURE = COOKIES_SEGURAS
 
 
 # Application definition
@@ -115,6 +116,9 @@ DATABASES = {
         "HOST": tmpPostgres.hostname,
         "PORT": tmpPostgres.port or 5432,
         "OPTIONS": dict(parse_qsl(tmpPostgres.query)),
+        # Conexiones persistentes para no abrir una conexión nueva a Neon en cada petición.
+        "CONN_MAX_AGE": int(os.getenv("DB_CONN_MAX_AGE", "60")),
+        "CONN_HEALTH_CHECKS": True,
     }
 }
 

@@ -6,3 +6,6 @@ staticfiles/
 venv/
 .venv/
 .env.local
+htmlcov/
+.coverage
+software_tienda_f/pruebas_rendimiento/resultados/

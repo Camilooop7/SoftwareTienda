@@ -1,0 +1,4 @@
+-r requirements.txt
+coverage>=7.6
+locust>=2.32
+waitress>=3.0

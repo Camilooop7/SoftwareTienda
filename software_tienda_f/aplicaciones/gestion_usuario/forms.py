@@ -89,10 +89,10 @@ class UsuarioValidacionMixin(forms.Form):
         return valor
 
     def clean_first_name(self):
-        return self._clean_nombre('first_name', 'Los nombres')
+        return self._clean_nombre('first_name', 'El campo nombres')
 
     def clean_last_name(self):
-        return self._clean_nombre('last_name', 'Los apellidos')
+        return self._clean_nombre('last_name', 'El campo apellidos')
 
     def clean_email(self):
         valor = self.cleaned_data['email'].strip().lower()
