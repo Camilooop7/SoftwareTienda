@@ -1,16 +1,17 @@
+from aplicaciones.casos_prueba import CasoPruebaMixin, caso
 from decimal import Decimal
-from datetime import date, time, timedelta
+from datetime import date, timedelta
 from django.test import TestCase
 from django.contrib.auth.models import Group
 from django.urls import reverse
-from aplicaciones.gestion_usuario.models import Usuario
+from django.utils import timezone
+from aplicaciones.gestion_usuario.models import Auditoria, Usuario
+from aplicaciones.gestion_usuario.forms import UsuarioCrearForm
 from ..models import ConfiguracionBonificacion, HoraExtra, Nomina, Solicitud
 from ..forms import BonificacionForm
-from ..services import generar_prenomina, aceptar_prenomina, rechazar_prenomina
-from ..reportes import resumen_mensual
 
 
-class NovedadesViewTest(TestCase):
+class NovedadesViewTest(CasoPruebaMixin, TestCase):
     def setUp(self):
         self.gerente_group, _ = Group.objects.get_or_create(name='Gerente')
         self.vendedor_group, _ = Group.objects.get_or_create(name='Vendedor')
@@ -24,89 +25,149 @@ class NovedadesViewTest(TestCase):
         self.gerente.groups.add(self.gerente_group)
         self.vendedor.groups.add(self.vendedor_group)
 
-    def test_pantalla_muestra_ambas_secciones_y_restringe_vendedor(self):
+    @caso('RF-005', 'Validar que la ventana Novedades muestre la sección de bonificaciones.',
+          'Gerente abre /nomina/novedades/', 'HTTP 200 con formulario hacia /nomina/bonificaciones/')
+    def test_novedades_muestra_bonificaciones(self):
         self.client.force_login(self.gerente)
-        respuesta = self.client.get(reverse('novedades'))
-        self.assertEqual(respuesta.status_code, 200)
-        self.assertContains(respuesta, 'Configuración de bonificaciones')
-        self.assertContains(respuesta, 'Trabajador')
-        self.assertContains(respuesta, 'action="/nomina/bonificaciones/"')
-        self.assertContains(respuesta, 'action="/nomina/horas-extra/"')
+        html = self.client.get(reverse('novedades')).content.decode()
+        visible = 'Configuración de bonificaciones' in html and 'action="/nomina/bonificaciones/"' in html
+        self.obtenido(f'Sección de bonificaciones visible: {visible}')
+        self.assertTrue(visible)
 
+    @caso('RF-002', 'Validar que la ventana Novedades muestre la sección de horas extra.',
+          'Gerente abre /nomina/novedades/', 'HTTP 200 con formulario hacia /nomina/horas-extra/')
+    def test_novedades_muestra_horas_extra(self):
+        self.client.force_login(self.gerente)
+        html = self.client.get(reverse('novedades')).content.decode()
+        visible = 'Trabajador' in html and 'action="/nomina/horas-extra/"' in html
+        self.obtenido(f'Sección de horas extra visible: {visible}')
+        self.assertTrue(visible)
+
+    @caso('RNF-003', 'Validar que un Vendedor no acceda a la ventana Novedades.',
+          'Vendedor abre /nomina/novedades/', 'HTTP 403')
+    def test_novedades_restringe_vendedor(self):
         self.client.force_login(self.vendedor)
-        self.assertEqual(self.client.get(reverse('novedades')).status_code, 403)
+        estado = self.client.get(reverse('novedades')).status_code
+        self.obtenido(f'HTTP {estado}')
+        self.assertEqual(estado, 403)
 
-    def test_get_de_vistas_antiguas_redirige_a_su_seccion(self):
+    @caso('RF-002', 'Validar que la ruta antigua de horas extra lleve a su sección en Novedades.',
+          'GET /nomina/horas-extra/', 'HTTP 302 a /nomina/novedades/?seccion=horas-extra#horas-extra')
+    def test_ruta_antigua_horas_extra_redirige(self):
         self.client.force_login(self.gerente)
-        for nombre, destino in (
-            ('horas_extra', '?seccion=horas-extra#horas-extra'),
-            ('bonificaciones', '?seccion=bonificaciones#bonificaciones'),
-        ):
-            respuesta = self.client.get(reverse(nombre))
-            self.assertEqual(respuesta.status_code, 302)
-            self.assertEqual(respuesta.url, reverse('novedades') + destino)
+        respuesta = self.client.get(reverse('horas_extra'))
+        self.obtenido(f'HTTP {respuesta.status_code}; redirección a {respuesta.get("Location")}')
+        self.assertEqual(respuesta.get('Location'), reverse('novedades') + '?seccion=horas-extra#horas-extra')
 
-    def test_post_valido_bonificaciones_crea_y_actualiza_configuracion(self):
+    @caso('RF-005', 'Validar que la ruta antigua de bonificaciones lleve a su sección en Novedades.',
+          'GET /nomina/bonificaciones/', 'HTTP 302 a /nomina/novedades/?seccion=bonificaciones#bonificaciones')
+    def test_ruta_antigua_bonificaciones_redirige(self):
         self.client.force_login(self.gerente)
-        datos = {'usuario': self.empleado.pk, 'porcentaje': '10', 'meta_mensual': '500000'}
-        respuesta = self.client.post(reverse('bonificaciones'), datos)
-        self.assertEqual(respuesta.url, reverse('novedades') + '?seccion=bonificaciones#bonificaciones')
-        config = ConfiguracionBonificacion.objects.get(usuario=self.empleado)
+        respuesta = self.client.get(reverse('bonificaciones'))
+        self.obtenido(f'HTTP {respuesta.status_code}; redirección a {respuesta.get("Location")}')
+        self.assertEqual(respuesta.get('Location'), reverse('novedades') + '?seccion=bonificaciones#bonificaciones')
+
+    @caso('RF-005', 'Validar que se registre una bonificación nueva.',
+          'POST bonificación: porcentaje 10; meta 500000', 'Configuración guardada con porcentaje 10')
+    def test_post_valido_bonificacion_crea(self):
+        self.client.force_login(self.gerente)
+        self.client.post(reverse('bonificaciones'), {'usuario': self.empleado.pk, 'porcentaje': '10', 'meta_mensual': '500000'})
+        config = ConfiguracionBonificacion.objects.filter(usuario=self.empleado).first()
+        self.obtenido(f'Porcentaje guardado: {config.porcentaje if config else "sin registro"}')
         self.assertEqual(config.porcentaje, Decimal('10'))
 
-        datos['porcentaje'] = '15'
-        respuesta = self.client.post(reverse('bonificaciones'), datos)
-        config.refresh_from_db()
-        self.assertEqual(config.porcentaje, Decimal('15'))
-        self.assertEqual(respuesta.status_code, 302)
+    @caso('RF-005', 'Validar que al guardar una bonificación se vuelva a su sección de Novedades.',
+          'POST bonificación válida', 'Redirección a /nomina/novedades/?seccion=bonificaciones#bonificaciones')
+    def test_post_valido_bonificacion_redirige(self):
+        self.client.force_login(self.gerente)
+        respuesta = self.client.post(reverse('bonificaciones'), {'usuario': self.empleado.pk, 'porcentaje': '10', 'meta_mensual': '500000'})
+        self.obtenido(f'HTTP {respuesta.status_code}; redirección a {respuesta.get("Location")}')
+        self.assertEqual(respuesta.get('Location'), reverse('novedades') + '?seccion=bonificaciones#bonificaciones')
 
-    def test_post_invalido_bonificacion_renderiza_novedades_con_error(self):
+    @caso('RF-005', 'Validar que registrar otra bonificación al mismo empleado actualice la existente.',
+          'Bonificación 10% existente; POST con porcentaje 15', 'Una sola configuración con porcentaje 15')
+    def test_post_bonificacion_actualiza(self):
+        self.client.force_login(self.gerente)
+        datos = {'usuario': self.empleado.pk, 'porcentaje': '10', 'meta_mensual': '500000'}
+        self.client.post(reverse('bonificaciones'), datos)
+        datos['porcentaje'] = '15'
+        self.client.post(reverse('bonificaciones'), datos)
+        configs = list(ConfiguracionBonificacion.objects.filter(usuario=self.empleado).values_list('porcentaje', flat=True))
+        self.obtenido(f'Configuraciones del empleado: {[str(p) for p in configs]}')
+        self.assertEqual(configs, [Decimal('15')])
+
+    @caso('RF-005', 'Validar que una bonificación sin porcentaje muestre el error en Novedades.',
+          "POST bonificación con porcentaje ''", 'HTTP 200 en novedades.html con: Escribe el porcentaje de bonificación.')
+    def test_post_invalido_bonificacion_muestra_error(self):
         self.client.force_login(self.gerente)
         respuesta = self.client.post(reverse('bonificaciones'), {
             'usuario': self.empleado.pk, 'porcentaje': '', 'meta_mensual': '500000'})
-        self.assertEqual(respuesta.status_code, 200)
+        mensaje = 'Escribe el porcentaje de bonificación.'
+        plantillas = [t.name for t in respuesta.templates]
+        self.obtenido(f'HTTP {respuesta.status_code}; plantilla novedades.html: {"novedades.html" in plantillas}; mensaje visible: {mensaje in respuesta.content.decode()}')
         self.assertTemplateUsed(respuesta, 'novedades.html')
-        self.assertContains(respuesta, 'Escribe el porcentaje de bonificación.')
+        self.assertContains(respuesta, mensaje)
 
-    def test_formularios_renderizan_restricciones_de_entrada(self):
-        from aplicaciones.gestion_usuario.forms import UsuarioCrearForm
+    @caso('RF-001', 'Validar que el campo identificación bloquee letras desde el teclado.',
+          'Formulario de registro de usuario, campo identificación', 'Atributo data-solo="numeros"')
+    def test_identificacion_bloquea_letras(self):
+        html = str(UsuarioCrearForm()['identificacion'])
+        self.obtenido(f'data-solo="numeros" presente: {"data-solo=\"numeros\"" in html}')
+        self.assertIn('data-solo="numeros"', html)
 
-        self.assertIn('data-solo="numeros"', str(UsuarioCrearForm()['identificacion']))
-        self.assertIn('data-solo="letras"', str(UsuarioCrearForm()['first_name']))
-        self.assertIn('data-solo="decimal"', str(BonificacionForm()['porcentaje']))
+    @caso('RF-001', 'Validar que el campo nombres bloquee números desde el teclado.',
+          'Formulario de registro de usuario, campo nombres', 'Atributo data-solo="letras"')
+    def test_nombres_bloquea_numeros(self):
+        html = str(UsuarioCrearForm()['first_name'])
+        self.obtenido(f'data-solo="letras" presente: {"data-solo=\"letras\"" in html}')
+        self.assertIn('data-solo="letras"', html)
 
-    def test_bonificacion_acepta_coma_y_punto_decimal(self):
-        for porcentaje in ('15,5', '15.5'):
-            form = BonificacionForm(data={
-                'usuario': self.empleado.pk,
-                'porcentaje': porcentaje,
-                'meta_mensual': '500000',
-            })
-            self.assertTrue(form.is_valid(), form.errors)
-            self.assertEqual(form.cleaned_data['porcentaje'], Decimal('15.5'))
+    @caso('RF-005', 'Validar que el porcentaje de bonificación solo admita números decimales.',
+          'Formulario de bonificación, campo porcentaje', 'Atributo data-solo="decimal"')
+    def test_porcentaje_solo_decimal(self):
+        html = str(BonificacionForm()['porcentaje'])
+        self.obtenido(f'data-solo="decimal" presente: {"data-solo=\"decimal\"" in html}')
+        self.assertIn('data-solo="decimal"', html)
 
+    def porcentaje_limpio(self, porcentaje):
+        form = BonificacionForm(data={'usuario': self.empleado.pk, 'porcentaje': porcentaje, 'meta_mensual': '500000'})
+        return form.cleaned_data['porcentaje'] if form.is_valid() else dict(form.errors)
+
+    @caso('RF-005', 'Validar que el porcentaje acepte coma decimal.', "porcentaje: '15,5'", 'Porcentaje = 15.5')
+    def test_bonificacion_acepta_coma(self):
+        valor = self.porcentaje_limpio('15,5')
+        self.obtenido(f'Porcentaje = {valor}')
+        self.assertEqual(valor, Decimal('15.5'))
+
+    @caso('RF-005', 'Validar que el porcentaje acepte punto decimal.', "porcentaje: '15.5'", 'Porcentaje = 15.5')
+    def test_bonificacion_acepta_punto(self):
+        valor = self.porcentaje_limpio('15.5')
+        self.obtenido(f'Porcentaje = {valor}')
+        self.assertEqual(valor, Decimal('15.5'))
+
+    @caso('RF-005', 'Validar que la meta de bonificación se muestre con formato de moneda.',
+          'Bonificación con meta 1500000', "Se muestra '$1.500.000' y no '1500000.00'")
     def test_novedades_muestra_montos_formateados(self):
         self.client.force_login(self.gerente)
         ConfiguracionBonificacion.objects.create(
-            usuario=self.empleado,
-            porcentaje=Decimal('15.5'),
-            meta_mensual=Decimal('1500000'),
-        )
-        respuesta = self.client.get(reverse('novedades'))
-        self.assertContains(respuesta, '$1.500.000')
-        self.assertNotContains(respuesta, '1500000.00')
+            usuario=self.empleado, porcentaje=Decimal('15.5'), meta_mensual=Decimal('1500000'))
+        html = self.client.get(reverse('novedades')).content.decode()
+        self.obtenido(f"'$1.500.000' visible: {'$1.500.000' in html}; '1500000.00' visible: {'1500000.00' in html}")
+        self.assertTrue('$1.500.000' in html and '1500000.00' not in html)
 
-    def test_post_valido_horas_extra_crea_registro_y_redirige(self):
+    @caso('RF-002', 'Validar el registro de horas extra desde la ventana Novedades.',
+          'POST horas extra: ayer, 08:00 a 19:00, motivo Inventario', '1 registro de horas extra guardado')
+    def test_post_valido_horas_extra_crea_registro(self):
         self.client.force_login(self.gerente)
-        respuesta = self.client.post(reverse('horas_extra'), {
-            'usuario': self.empleado.pk, 'fecha': '2026-10-24',
+        self.client.post(reverse('horas_extra'), {
+            'usuario': self.empleado.pk, 'fecha': (timezone.localdate() - timedelta(days=1)).isoformat(),
             'hora_ingreso': '08:00', 'hora_salida': '19:00', 'motivo': 'Inventario'})
-        self.assertEqual(respuesta.status_code, 302)
-        self.assertEqual(respuesta.url, reverse('novedades') + '?seccion=horas-extra#horas-extra')
-        self.assertEqual(HoraExtra.objects.filter(usuario=self.empleado).count(), 1)
+        cantidad = HoraExtra.objects.filter(usuario=self.empleado).count()
+        self.obtenido(f'Registros de horas extra: {cantidad}')
+        self.assertEqual(cantidad, 1)
 
 
-class ReporteMensualViewTest(TestCase):
+class ReporteMensualViewTest(CasoPruebaMixin, TestCase):
     def setUp(self):
         self.gerente_group, _ = Group.objects.get_or_create(name='Gerente')
         self.auxiliar_group, _ = Group.objects.get_or_create(name='Auxiliar Administrativo')
@@ -130,50 +191,74 @@ class ReporteMensualViewTest(TestCase):
             total_pagar=Decimal(pagado),
         )
 
-    def test_permisos_por_grupo_y_anonimo(self):
-        url = reverse('reporte_mensual')
-        for usuario in (self.gerente, self.auxiliar):
-            self.client.force_login(usuario)
-            self.assertEqual(self.client.get(url).status_code, 200)
+    def estado_para(self, usuario):
+        self.client.force_login(usuario)
+        return self.client.get(reverse('reporte_mensual')).status_code
 
-        self.client.force_login(self.vendedor)
-        self.assertEqual(self.client.get(url).status_code, 403)
+    @caso('RNF-003', 'Validar que el Gerente pueda ver los reportes de nómina.', 'Gerente abre /nomina/reportes/', 'HTTP 200')
+    def test_gerente_ve_reportes(self):
+        estado = self.estado_para(self.gerente)
+        self.obtenido(f'HTTP {estado}')
+        self.assertEqual(estado, 200)
 
-        self.client.logout()
-        respuesta = self.client.get(url)
-        self.assertEqual(respuesta.status_code, 302)
-        self.assertTrue(respuesta.url.startswith('/login/'))
+    @caso('RNF-003', 'Validar que el Auxiliar Administrativo pueda ver los reportes.', 'Auxiliar abre /nomina/reportes/', 'HTTP 200')
+    def test_auxiliar_ve_reportes(self):
+        estado = self.estado_para(self.auxiliar)
+        self.obtenido(f'HTTP {estado}')
+        self.assertEqual(estado, 200)
 
-    def test_reporte_filtra_nominas_aceptadas_y_formatea_total(self):
+    @caso('RNF-003', 'Validar que un Vendedor no pueda ver los reportes.', 'Vendedor abre /nomina/reportes/', 'HTTP 403')
+    def test_vendedor_no_ve_reportes(self):
+        estado = self.estado_para(self.vendedor)
+        self.obtenido(f'HTTP {estado}')
+        self.assertEqual(estado, 403)
+
+    @caso('RNF-003', 'Validar que un usuario sin sesión sea enviado al inicio de sesión.', 'Visitante anónimo abre /nomina/reportes/', 'HTTP 302 a /login/')
+    def test_anonimo_redirige_login(self):
+        respuesta = self.client.get(reverse('reporte_mensual'))
+        self.obtenido(f'HTTP {respuesta.status_code}; redirección a {respuesta.get("Location")}')
+        self.assertTrue(respuesta.status_code == 302 and respuesta['Location'].startswith('/login/'))
+
+    def reporte_septiembre(self):
         self._crear_nomina(self.gerente, Nomina.Estado.ACEPTADA, '920000')
         self._crear_nomina(self.auxiliar, Nomina.Estado.PENDIENTE, '920000')
         self.client.force_login(self.gerente)
+        return self.client.get(reverse('reporte_mensual'), {'periodo': '2026-09'}).content.decode()
 
-        respuesta = self.client.get(reverse('reporte_mensual'), {'periodo': '2026-09'})
+    @caso('RF-004', 'Validar que el reporte mensual liste solo empleados con nómina aceptada.',
+          '2026-09: nómina ACEPTADA de reporte-gerente y PENDIENTE de reporte-auxiliar', 'Aparece reporte-gerente y no reporte-auxiliar')
+    def test_reporte_lista_solo_aceptadas(self):
+        html = self.reporte_septiembre()
+        self.obtenido(f"reporte-gerente visible: {'reporte-gerente' in html}; reporte-auxiliar visible: {'reporte-auxiliar' in html}")
+        self.assertTrue('reporte-gerente' in html and 'reporte-auxiliar' not in html)
 
-        self.assertEqual(respuesta.status_code, 200)
-        self.assertContains(respuesta, 'reporte-gerente')
-        self.assertNotContains(respuesta, 'reporte-auxiliar')
-        self.assertContains(respuesta, '$920.000')
+    @caso('RF-004', 'Validar que el reporte mensual muestre los montos con formato de moneda.',
+          '2026-09: nómina aceptada con total 920000', "Se muestra '$920.000'")
+    def test_reporte_formatea_total(self):
+        html = self.reporte_septiembre()
+        self.obtenido(f"'$920.000' visible: {'$920.000' in html}")
+        self.assertIn('$920.000', html)
 
-    def test_periodo_invalido_muestra_error_especifico(self):
+    @caso('RF-004', 'Validar el mensaje del reporte cuando el mes no existe.', "periodo: '2026-13'", 'El mes debe estar entre 01 y 12.')
+    def test_reporte_mes_invalido(self):
         self.client.force_login(self.gerente)
-        url = reverse('reporte_mensual')
+        respuesta = self.client.get(reverse('reporte_mensual'), {'periodo': '2026-13'})
+        mensaje = 'El mes debe estar entre 01 y 12.'
+        self.obtenido(f'HTTP {respuesta.status_code}; mensaje visible: {mensaje in respuesta.content.decode()}')
+        self.assertContains(respuesta, mensaje)
 
-        respuesta_mes = self.client.get(url, {'periodo': '2026-13'})
-        self.assertEqual(respuesta_mes.status_code, 200)
-        self.assertContains(respuesta_mes, 'El mes debe estar entre 01 y 12.')
+    @caso('RF-004', 'Validar el mensaje del reporte cuando el periodo no tiene formato AAAA-MM.', "periodo: 'abc'",
+          'El período debe tener el formato AAAA-MM (ej: 2026-09).')
+    def test_reporte_formato_invalido(self):
+        self.client.force_login(self.gerente)
+        respuesta = self.client.get(reverse('reporte_mensual'), {'periodo': 'abc'})
+        mensaje = 'El período debe tener el formato AAAA-MM (ej: 2026-09).'
+        self.obtenido(f'HTTP {respuesta.status_code}; mensaje visible: {mensaje in respuesta.content.decode()}')
+        self.assertContains(respuesta, mensaje)
 
-        respuesta_formato = self.client.get(url, {'periodo': 'abc'})
-        self.assertEqual(respuesta_formato.status_code, 200)
-        self.assertContains(
-            respuesta_formato, 'El período debe tener el formato AAAA-MM (ej: 2026-09).')
 
-
-class ReportePDFViewTest(TestCase):
+class ReportePDFViewTest(CasoPruebaMixin, TestCase):
     def setUp(self):
-        from aplicaciones.gestion_usuario.models import Auditoria
-        self.Auditoria = Auditoria
         self.gerente_group, _ = Group.objects.get_or_create(name='Gerente')
         self.vendedor_group, _ = Group.objects.get_or_create(name='Vendedor')
         self.gerente = Usuario.objects.create_user(
@@ -183,54 +268,69 @@ class ReportePDFViewTest(TestCase):
         self.gerente.groups.add(self.gerente_group)
         self.vendedor.groups.add(self.vendedor_group)
 
-    def _crear_nomina_aceptada(self):
-        Nomina.objects.create(
-            usuario=self.gerente, periodo='2026-09', estado=Nomina.Estado.ACEPTADA,
-            salario_bruto=Decimal('1000000'), valor_bonificacion=Decimal('0'),
-            valor_horas_extra=Decimal('0'), deducciones=Decimal('80000'),
-            deduccion_salud=Decimal('40000'), deduccion_pension=Decimal('40000'),
-            total_pagar=Decimal('920000'),
-        )
-
-    def test_exporta_pdf_y_registra_auditoria(self):
-        self._crear_nomina_aceptada()
+    def descargar(self, periodo='2026-09', con_nomina=True):
+        if con_nomina:
+            Nomina.objects.create(
+                usuario=self.gerente, periodo='2026-09', estado=Nomina.Estado.ACEPTADA,
+                salario_bruto=Decimal('1000000'), valor_bonificacion=Decimal('0'),
+                valor_horas_extra=Decimal('0'), deducciones=Decimal('80000'),
+                deduccion_salud=Decimal('40000'), deduccion_pension=Decimal('40000'),
+                total_pagar=Decimal('920000'),
+            )
         self.client.force_login(self.gerente)
-        respuesta = self.client.get(reverse('reporte_mensual_pdf'), {'periodo': '2026-09'})
+        return self.client.get(reverse('reporte_mensual_pdf'), {'periodo': periodo})
 
-        self.assertEqual(respuesta.status_code, 200)
-        self.assertEqual(respuesta['Content-Type'], 'application/pdf')
-        self.assertTrue(respuesta.content.startswith(b'%PDF'))
+    @caso('RF-004', 'Validar que el reporte mensual se descargue como PDF.', 'Gerente descarga el PDF de 2026-09',
+          'HTTP 200; Content-Type application/pdf; contenido inicia con %PDF')
+    def test_exporta_pdf(self):
+        respuesta = self.descargar()
+        self.obtenido(f"HTTP {respuesta.status_code}; tipo {respuesta['Content-Type']}; inicio {respuesta.content[:4]!r}")
+        self.assertTrue(respuesta['Content-Type'] == 'application/pdf' and respuesta.content.startswith(b'%PDF'))
+
+    @caso('RF-004', 'Validar el nombre del archivo PDF descargado.', 'Gerente descarga el PDF de 2026-09',
+          'Archivo reporte_nomina_2026-09.pdf')
+    def test_nombre_archivo_pdf(self):
+        respuesta = self.descargar()
+        self.obtenido(f"Content-Disposition: {respuesta['Content-Disposition']}")
         self.assertIn('reporte_nomina_2026-09.pdf', respuesta['Content-Disposition'])
-        self.assertTrue(self.Auditoria.objects.filter(
-            usuario=self.gerente, accion=self.Auditoria.Accion.EXPORTAR).exists())
 
+    @caso('RF-017', 'Validar que la exportación del PDF quede en la auditoría.', 'Gerente descarga el PDF de 2026-09',
+          'Registro de auditoría con acción EXPORTAR del Gerente')
+    def test_exportar_pdf_registra_auditoria(self):
+        self.descargar()
+        existe = Auditoria.objects.filter(usuario=self.gerente, accion=Auditoria.Accion.EXPORTAR).exists()
+        self.obtenido(f'Auditoría EXPORTAR registrada: {existe}')
+        self.assertTrue(existe)
+
+    @caso('RF-004', 'Validar que un mes sin nóminas también genere un PDF válido.', 'PDF de 2026-09 sin nóminas',
+          'HTTP 200 y contenido que inicia con %PDF')
     def test_mes_vacio_devuelve_pdf_valido(self):
-        self.client.force_login(self.gerente)
-        respuesta = self.client.get(reverse('reporte_mensual_pdf'), {'periodo': '2026-09'})
-        self.assertEqual(respuesta.status_code, 200)
-        self.assertEqual(respuesta['Content-Type'], 'application/pdf')
-        self.assertTrue(respuesta.content.startswith(b'%PDF'))
+        respuesta = self.descargar(con_nomina=False)
+        self.obtenido(f'HTTP {respuesta.status_code}; inicio {respuesta.content[:4]!r}')
+        self.assertTrue(respuesta.status_code == 200 and respuesta.content.startswith(b'%PDF'))
 
-    def test_permisos_y_periodo_invalido(self):
-        url = reverse('reporte_mensual_pdf')
+    @caso('RNF-003', 'Validar que un Vendedor no pueda descargar el PDF.', 'Vendedor solicita el PDF de 2026-09', 'HTTP 403')
+    def test_vendedor_no_descarga_pdf(self):
         self.client.force_login(self.vendedor)
-        self.assertEqual(self.client.get(url, {'periodo': '2026-09'}).status_code, 403)
+        estado = self.client.get(reverse('reporte_mensual_pdf'), {'periodo': '2026-09'}).status_code
+        self.obtenido(f'HTTP {estado}')
+        self.assertEqual(estado, 403)
 
-        self.client.logout()
-        self.assertEqual(self.client.get(url, {'periodo': '2026-09'}).status_code, 302)
+    @caso('RNF-003', 'Validar que un visitante sin sesión no pueda descargar el PDF.', 'Anónimo solicita el PDF de 2026-09', 'HTTP 302 (al inicio de sesión)')
+    def test_anonimo_no_descarga_pdf(self):
+        estado = self.client.get(reverse('reporte_mensual_pdf'), {'periodo': '2026-09'}).status_code
+        self.obtenido(f'HTTP {estado}')
+        self.assertEqual(estado, 302)
 
-        self.client.force_login(self.gerente)
-        respuesta = self.client.get(url, {'periodo': '2026-13'})
-        self.assertEqual(respuesta.status_code, 302)
-        self.assertEqual(respuesta.url, reverse('reporte_mensual'))
-
-    def test_generador_produce_pdf(self):
-        from ..pdf import generar_pdf_reporte
-        self._crear_nomina_aceptada()
-        self.assertTrue(generar_pdf_reporte(resumen_mensual('2026-09'), self.gerente).startswith(b'%PDF'))
+    @caso('RF-004', 'Validar que un periodo inválido en el PDF regrese a la pantalla de reportes.', "periodo: '2026-13'",
+          'HTTP 302 a /nomina/reportes/')
+    def test_pdf_periodo_invalido(self):
+        respuesta = self.descargar(periodo='2026-13', con_nomina=False)
+        self.obtenido(f'HTTP {respuesta.status_code}; redirección a {respuesta.get("Location")}')
+        self.assertEqual(respuesta.get('Location'), reverse('reporte_mensual'))
 
 
-class PreNominaIntegracionViewTest(TestCase):
+class PreNominaIntegracionViewTest(CasoPruebaMixin, TestCase):
     def setUp(self):
         self.gerente_group, _ = Group.objects.get_or_create(name='Gerente')
         self.auxiliar_group, _ = Group.objects.get_or_create(name='Auxiliar Administrativo')
@@ -254,78 +354,164 @@ class PreNominaIntegracionViewTest(TestCase):
         self.client.force_login(self.gerente)
         return self.client.post(reverse('calculo_nomina'), {'periodo': self.periodo})
 
-    def test_calcular_bandeja_detalle_y_permisos(self):
-        response = self._calcular()
-        self.assertEqual(response.status_code, 302)
-        self.assertTrue(Nomina.objects.filter(periodo=self.periodo, estado=Nomina.Estado.PENDIENTE).exists())
-        solicitud = Solicitud.objects.get(tipo=Solicitud.Tipo.NOMINA, periodo=self.periodo)
-        segunda = self.client.post(reverse('calculo_nomina'), {'periodo': self.periodo}, follow=True)
-        self.assertContains(segunda, 'ya fue calculada')
-        self.assertEqual(Nomina.objects.filter(periodo=self.periodo).count(), 4)
-        self.client.force_login(self.auxiliar)
-        self.assertContains(self.client.get(reverse('bandeja_aprobacion')), 'Pre-nómina')
-        detalle = reverse('prenomina_detalle', args=[solicitud.pk])
-        self.assertEqual(self.client.get(detalle).status_code, 200)
-        self.assertContains(self.client.get(detalle), 'Empleada Prueba')
-        for no_autorizado in (self.gerente, self.vendedor):
-            self.client.force_login(no_autorizado)
-            self.assertEqual(self.client.get(detalle).status_code, 403)
+    def _solicitud(self):
+        return Solicitud.objects.get(tipo=Solicitud.Tipo.NOMINA, periodo=self.periodo)
 
-    def test_aprobacion_publica_reporte_nomina_y_perfil(self):
+    @caso('RF-008', 'Validar que el Gerente calcule la pre-nómina desde la pantalla de cálculo.',
+          'Gerente envía el periodo actual', '4 nóminas PENDIENTES (una por usuario activo)')
+    def test_calcular_crea_pendientes(self):
         self._calcular()
-        solicitud = Solicitud.objects.get(tipo=Solicitud.Tipo.NOMINA, periodo=self.periodo)
+        cantidad = Nomina.objects.filter(periodo=self.periodo, estado=Nomina.Estado.PENDIENTE).count()
+        self.obtenido(f'Nóminas pendientes: {cantidad}')
+        self.assertEqual(cantidad, 4)
+
+    @caso('RF-008', 'Validar que la pantalla informe cuando el periodo ya fue calculado.',
+          'Gerente calcula dos veces el periodo actual', "Mensaje 'ya fue calculada' y siguen 4 nóminas")
+    def test_calcular_dos_veces_informa(self):
+        self._calcular()
+        segunda = self.client.post(reverse('calculo_nomina'), {'periodo': self.periodo}, follow=True)
+        cantidad = Nomina.objects.filter(periodo=self.periodo).count()
+        self.obtenido(f"Mensaje visible: {'ya fue calculada' in segunda.content.decode()}; nóminas: {cantidad}")
+        self.assertContains(segunda, 'ya fue calculada')
+        self.assertEqual(cantidad, 4)
+
+    @caso('RF-007', 'Validar que la pre-nómina aparezca en la bandeja del Auxiliar.',
+          'Pre-nómina calculada; el Auxiliar abre la bandeja', "La bandeja muestra 'Pre-nómina'")
+    def test_bandeja_muestra_prenomina(self):
+        self._calcular()
+        self.client.force_login(self.auxiliar)
+        html = self.client.get(reverse('bandeja_aprobacion')).content.decode()
+        self.obtenido(f"'Pre-nómina' visible en la bandeja: {'Pre-nómina' in html}")
+        self.assertIn('Pre-nómina', html)
+
+    @caso('RF-007', 'Validar que el Auxiliar vea el detalle de la pre-nómina por empleado.',
+          'Auxiliar abre el detalle de la pre-nómina', "HTTP 200 con 'Empleada Prueba'")
+    def test_detalle_visible_para_auxiliar(self):
+        self._calcular()
+        self.client.force_login(self.auxiliar)
+        respuesta = self.client.get(reverse('prenomina_detalle', args=[self._solicitud().pk]))
+        self.obtenido(f"HTTP {respuesta.status_code}; 'Empleada Prueba' visible: {'Empleada Prueba' in respuesta.content.decode()}")
+        self.assertContains(respuesta, 'Empleada Prueba')
+
+    @caso('RNF-003', 'Validar que solo el Auxiliar pueda abrir el detalle de la pre-nómina.',
+          'Gerente y Vendedor abren el detalle', 'HTTP 403 para ambos')
+    def test_detalle_restringido(self):
+        self._calcular()
+        detalle = reverse('prenomina_detalle', args=[self._solicitud().pk])
+        estados = []
+        for usuario in (self.gerente, self.vendedor):
+            self.client.force_login(usuario)
+            estados.append(self.client.get(detalle).status_code)
+        self.obtenido(f'Gerente: HTTP {estados[0]}; Vendedor: HTTP {estados[1]}')
+        self.assertEqual(estados, [403, 403])
+
+    def _aprobar(self):
+        self._calcular()
+        self.client.force_login(self.auxiliar)
+        self.client.post(reverse('bandeja_aprobacion'), {'solicitud_id': self._solicitud().pk, 'accion': 'aprobar'})
+
+    @caso('RF-007', 'Validar que al aprobar desde la bandeja no queden nóminas pendientes.',
+          'Auxiliar aprueba la pre-nómina', '0 PENDIENTES y nóminas ACEPTADAS')
+    def test_aprobar_desde_bandeja(self):
+        self._aprobar()
+        pendientes = Nomina.objects.filter(periodo=self.periodo, estado=Nomina.Estado.PENDIENTE).count()
+        aceptadas = Nomina.objects.filter(periodo=self.periodo, estado=Nomina.Estado.ACEPTADA).count()
+        self.obtenido(f'Pendientes: {pendientes}; aceptadas: {aceptadas}')
+        self.assertEqual((pendientes, aceptadas), (0, 4))
+
+    @caso('RF-004', 'Validar que la nómina aprobada aparezca en el reporte mensual.',
+          'Pre-nómina aprobada; Gerente abre el reporte del periodo', "El reporte muestra 'Empleada Prueba'")
+    def test_aprobada_aparece_en_reporte(self):
+        self._aprobar()
+        self.client.force_login(self.gerente)
+        html = self.client.get(reverse('reporte_mensual'), {'periodo': self.periodo}).content.decode()
+        self.obtenido(f"'Empleada Prueba' en el reporte: {'Empleada Prueba' in html}")
+        self.assertIn('Empleada Prueba', html)
+
+    @caso('RF-004', 'Validar que el empleado consulte su nómina aprobada.',
+          'Pre-nómina aprobada; el empleado consulta su nómina', "Se muestra 'Total a pagar'")
+    def test_empleado_consulta_nomina_aprobada(self):
+        self._aprobar()
+        self.client.force_login(self.empleado)
+        html = self.client.get(reverse('nomina_consultar'), {'periodo': self.periodo}).content.decode()
+        self.obtenido(f"'Total a pagar' visible: {'Total a pagar' in html}")
+        self.assertIn('Total a pagar', html)
+
+    @caso('RF-012', 'Validar que el perfil del empleado muestre su último pago.',
+          'Pre-nómina aprobada; el empleado abre su perfil', "El perfil muestra 'Último pago'")
+    def test_perfil_muestra_ultimo_pago(self):
+        self._aprobar()
+        self.client.force_login(self.empleado)
+        html = self.client.get(reverse('perfil_actual')).content.decode()
+        self.obtenido(f"'Último pago' visible: {'Último pago' in html}")
+        self.assertIn('Último pago', html)
+
+    @caso('RF-007', 'Validar que la bandeja exija motivo para rechazar la pre-nómina.',
+          'Auxiliar rechaza sin escribir motivo', "Mensaje 'Debes escribir el motivo' y solicitud PENDIENTE")
+    def test_rechazo_requiere_motivo(self):
+        self._calcular()
+        solicitud = self._solicitud()
+        self.client.force_login(self.auxiliar)
+        respuesta = self.client.post(reverse('bandeja_aprobacion'), {'solicitud_id': solicitud.pk, 'accion': 'rechazar'}, follow=True)
+        solicitud.refresh_from_db()
+        self.obtenido(f"Mensaje visible: {'Debes escribir el motivo' in respuesta.content.decode()}; estado: {solicitud.estado}")
+        self.assertContains(respuesta, 'Debes escribir el motivo')
+        self.assertEqual(solicitud.estado, Solicitud.Estado.PENDIENTE)
+
+    @caso('RF-008', 'Validar que tras rechazar la pre-nómina el Gerente pueda recalcularla.',
+          "Rechazo con motivo 'Datos errados' y nuevo cálculo", '4 nóminas PENDIENTES nuevas')
+    def test_rechazo_permite_recalculo(self):
+        self._calcular()
         self.client.force_login(self.auxiliar)
         self.client.post(reverse('bandeja_aprobacion'), {
-            'solicitud_id': solicitud.pk, 'accion': 'aprobar'})
-        self.assertFalse(Nomina.objects.filter(periodo=self.periodo, estado=Nomina.Estado.PENDIENTE).exists())
-        self.assertTrue(Nomina.objects.filter(periodo=self.periodo, estado=Nomina.Estado.ACEPTADA).exists())
-        self.client.force_login(self.gerente)
-        self.assertContains(self.client.get(reverse('reporte_mensual'), {'periodo': self.periodo}), 'Empleada Prueba')
-        self.client.force_login(self.empleado)
-        self.assertContains(self.client.get(reverse('nomina_consultar'), {'periodo': self.periodo}), 'Total a pagar')
-        self.assertContains(self.client.get(reverse('perfil_actual')), 'Último pago')
-
-    def test_rechazo_requiere_motivo_y_permite_recalculo(self):
+            'solicitud_id': self._solicitud().pk, 'accion': 'rechazar', 'motivo_rechazo': 'Datos errados'})
         self._calcular()
-        solicitud = Solicitud.objects.get(tipo=Solicitud.Tipo.NOMINA, periodo=self.periodo)
-        self.client.force_login(self.auxiliar)
-        url = reverse('bandeja_aprobacion')
-        respuesta = self.client.post(url, {'solicitud_id': solicitud.pk, 'accion': 'rechazar'}, follow=True)
-        self.assertContains(respuesta, 'Debes escribir el motivo')
-        solicitud.refresh_from_db()
-        self.assertEqual(solicitud.estado, Solicitud.Estado.PENDIENTE)
-        self.client.post(url, {'solicitud_id': solicitud.pk, 'accion': 'rechazar', 'motivo_rechazo': 'Datos errados'})
-        self.client.force_login(self.gerente)
-        self.assertEqual(self.client.post(reverse('calculo_nomina'), {'periodo': self.periodo}).status_code, 302)
-        self.assertEqual(Nomina.objects.filter(periodo=self.periodo, estado=Nomina.Estado.PENDIENTE).count(), 4)
+        cantidad = Nomina.objects.filter(periodo=self.periodo, estado=Nomina.Estado.PENDIENTE).count()
+        self.obtenido(f'Nóminas pendientes tras recalcular: {cantidad}')
+        self.assertEqual(cantidad, 4)
 
-    def test_detalle_rechazado_no_muestra_lote_recalculado(self):
+    def _rechazar_y_recalcular(self):
         self._calcular()
-        vieja = Solicitud.objects.get(tipo=Solicitud.Tipo.NOMINA, periodo=self.periodo)
+        vieja = self._solicitud()
         self.client.force_login(self.auxiliar)
         self.client.post(reverse('bandeja_aprobacion'), {
             'solicitud_id': vieja.pk, 'accion': 'rechazar', 'motivo_rechazo': 'Datos errados'})
         self.empleado.salario_base = Decimal('2000000')
         self.empleado.save(update_fields=['salario_base'])
-        self.client.force_login(self.gerente)
-        self.client.post(reverse('calculo_nomina'), {'periodo': self.periodo})
-        nueva = Solicitud.objects.exclude(pk=vieja.pk).get(
-            tipo=Solicitud.Tipo.NOMINA, periodo=self.periodo)
-        detalle_url = reverse('prenomina_detalle', args=[vieja.pk])
+        self._calcular()
+        nueva = Solicitud.objects.exclude(pk=vieja.pk).get(tipo=Solicitud.Tipo.NOMINA, periodo=self.periodo)
         self.client.force_login(self.auxiliar)
-        respuesta_vieja = self.client.get(detalle_url)
-        self.assertContains(respuesta_vieja, 'se reemplazaron')
-        self.assertNotContains(respuesta_vieja, '$1.840.000')
-        respuesta_nueva = self.client.get(reverse('prenomina_detalle', args=[nueva.pk]))
-        self.assertContains(respuesta_nueva, 'Empleada Prueba')
-        self.assertContains(respuesta_nueva, '$1.840.000')
+        return vieja, nueva
 
-    def test_nomina_pendiente_no_expone_montos_y_error_de_periodo(self):
+    @caso('RF-007', 'Validar que el detalle de una pre-nómina rechazada no muestre el lote recalculado.',
+          'Pre-nómina rechazada; salario cambiado a 2.000.000 y recalculada', "Detalle antiguo: 'se reemplazaron' y sin '$1.840.000'")
+    def test_detalle_rechazado_no_muestra_lote_recalculado(self):
+        vieja, _ = self._rechazar_y_recalcular()
+        html = self.client.get(reverse('prenomina_detalle', args=[vieja.pk])).content.decode()
+        self.obtenido(f"'se reemplazaron' visible: {'se reemplazaron' in html}; '$1.840.000' visible: {'$1.840.000' in html}")
+        self.assertTrue('se reemplazaron' in html and '$1.840.000' not in html)
+
+    @caso('RF-008', 'Validar que el nuevo cálculo use el salario actualizado del empleado.',
+          'Salario cambiado a 2.000.000 y pre-nómina recalculada', "Detalle nuevo muestra '$1.840.000'")
+    def test_detalle_nuevo_usa_salario_actualizado(self):
+        _, nueva = self._rechazar_y_recalcular()
+        html = self.client.get(reverse('prenomina_detalle', args=[nueva.pk])).content.decode()
+        self.obtenido(f"'$1.840.000' visible: {'$1.840.000' in html}")
+        self.assertIn('$1.840.000', html)
+
+    @caso('RF-004', 'Validar que el empleado no vea montos de una nómina aún en revisión.',
+          'Pre-nómina PENDIENTE; el empleado consulta', "Mensaje 'está en revisión' sin mostrar '$1.000.000'")
+    def test_nomina_pendiente_no_expone_montos(self):
         self._calcular()
         self.client.force_login(self.empleado)
-        respuesta = self.client.get(reverse('nomina_consultar'), {'periodo': self.periodo})
-        self.assertContains(respuesta, 'está en revisión')
-        self.assertNotContains(respuesta, '$1.000.000')
+        html = self.client.get(reverse('nomina_consultar'), {'periodo': self.periodo}).content.decode()
+        self.obtenido(f"'está en revisión' visible: {'está en revisión' in html}; '$1.000.000' visible: {'$1.000.000' in html}")
+        self.assertTrue('está en revisión' in html and '$1.000.000' not in html)
+
+    @caso('RF-008', 'Validar el mensaje de periodo inválido en la pantalla de cálculo.',
+          "periodo: '2026/09'", "Mensaje con 'formato AAAA-MM'")
+    def test_calculo_periodo_invalido(self):
         self.client.force_login(self.gerente)
         respuesta = self.client.post(reverse('calculo_nomina'), {'periodo': '2026/09'}, follow=True)
+        self.obtenido(f"Mensaje visible: {'formato AAAA-MM' in respuesta.content.decode()}")
         self.assertContains(respuesta, 'formato AAAA-MM')

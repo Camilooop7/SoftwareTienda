@@ -2,9 +2,8 @@ import calendar
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.utils import timezone
-from django.db import transaction
 from aplicaciones.gestion_usuario.models import Auditoria, Usuario
 from .models import HoraExtra, Nomina, ConfiguracionBonificacion, Solicitud
 from .excepciones import (
@@ -56,23 +55,19 @@ def calcular_horas_extra(usuario, fecha, hora_ingreso, hora_salida, motivo):
     )
 
 
-def calcular_nomina(usuario, periodo, solicitud=None):
+def construir_nomina(usuario, periodo, config, total_horas, solicitud=None):
     salario_bruto = Decimal(str(usuario.salario_base))
 
-    config = ConfiguracionBonificacion.objects.filter(usuario=usuario).first()
     bonificacion = Decimal('0')
     if config and config.meta_mensual > 0:
         bonificacion = (config.porcentaje / 100 * config.meta_mensual).quantize(Decimal('0'))
-
-    horas_extra = HoraExtra.objects.filter(usuario=usuario, periodo=periodo)
-    total_horas = sum((h.valor for h in horas_extra), Decimal('0'))
 
     salud = (salario_bruto * PCT_SALUD).quantize(Decimal('0'))
     pension = (salario_bruto * PCT_PENSION).quantize(Decimal('0'))
     deducciones = salud + pension
     total = salario_bruto + bonificacion + total_horas - deducciones
 
-    return Nomina.objects.create(
+    return Nomina(
         usuario=usuario,
         solicitud=solicitud,
         periodo=periodo,
@@ -84,6 +79,15 @@ def calcular_nomina(usuario, periodo, solicitud=None):
         deduccion_pension=pension,
         total_pagar=total,
     )
+
+
+def calcular_nomina(usuario, periodo, solicitud=None):
+    config = ConfiguracionBonificacion.objects.filter(usuario=usuario).first()
+    horas_extra = HoraExtra.objects.filter(usuario=usuario, periodo=periodo)
+    total_horas = sum((h.valor for h in horas_extra), Decimal('0'))
+    nomina = construir_nomina(usuario, periodo, config, total_horas, solicitud)
+    nomina.save()
+    return nomina
 
 
 @transaction.atomic
@@ -109,7 +113,15 @@ def generar_prenomina(periodo, calculada_por):
         periodo=periodo,
         motivo='Pre-nómina {0}: cálculo en curso'.format(nombre_periodo(periodo)),
     )
-    nominas = [calcular_nomina(usuario, periodo, solicitud=solicitud) for usuario in empleados]
+    configs = {}
+    for config in ConfiguracionBonificacion.objects.filter(usuario__in=empleados).order_by('pk'):
+        configs.setdefault(config.usuario_id, config)
+    horas = {fila['usuario_id']: fila['total'] for fila in HoraExtra.objects.filter(
+        usuario__in=empleados, periodo=periodo).values('usuario_id').annotate(total=Sum('valor'))}
+    nominas = Nomina.objects.bulk_create([
+        construir_nomina(usuario, periodo, configs.get(usuario.pk), horas.get(usuario.pk, Decimal('0')), solicitud)
+        for usuario in empleados
+    ])
     total = sum((nomina.total_pagar for nomina in nominas), Decimal('0'))
     motivo = 'Pre-nómina {0}: {1} empleados, total {2}'.format(
         nombre_periodo(periodo), len(nominas), formatear_moneda(total))

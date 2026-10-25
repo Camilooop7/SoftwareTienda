@@ -37,3 +37,15 @@ Ejecuta únicamente estos escenarios con:
 ```bash
 python manage.py test aplicaciones.nomina.tests.test_integracion
 ```
+
+## Plan de pruebas por requisito
+
+Los métodos de prueba se documentan con el decorador `@caso(rf, descripcion, entrada, esperado)`. El número CP se asigna al generar el plan, ordenando por identificador RF/RNF y por el identificador del test; no se mantiene a mano. Las pruebas pueden registrar el valor observado en ejecución mediante `self.obtenido(texto)`. El comando conserva el estado por prueba y escribe `docs/resultados_pruebas.json`.
+
+Genera el plan ejecutando toda la suite de `aplicaciones` sobre una base de datos de pruebas temporal (igual que `manage.py test`):
+
+```bash
+python manage.py plan_pruebas
+```
+
+Los archivos quedan en `docs/Plan_de_Pruebas.xlsx` (hojas «Plan de pruebas» y «Requisitos») y `docs/Plan_de_Pruebas.md`, con las columnas CP, RF, Descripción, Input, Resultado esperado, Resultado obtenido, Observación y Estado (Aprobado / No aprobado / Observación). Para regenerarlo con los resultados ya guardados o los datos de rendimiento, usa `python manage.py plan_pruebas --solo-generar`; se puede cambiar la ruta con `--salida ruta/al/archivo.xlsx`. Las mediciones de carga y estrés con Locust están en `docs/resultados_rendimiento.json` y se incorporan como casos en la misma hoja del plan.

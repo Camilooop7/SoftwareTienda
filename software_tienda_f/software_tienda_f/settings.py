@@ -163,8 +163,8 @@ STORAGES = {
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 
-# Durante `manage.py test` no existe el manifest de collectstatic
-if len(sys.argv) > 1 and sys.argv[1] == 'test':
+# Durante `manage.py test` y `manage.py plan_pruebas` no existe el manifest de collectstatic
+if len(sys.argv) > 1 and sys.argv[1] in ('test', 'plan_pruebas'):
     STORAGES["staticfiles"] = {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}
 
 

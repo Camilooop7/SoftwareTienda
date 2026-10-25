@@ -54,7 +54,7 @@ class Usuario(AbstractUser):
                                                                           self.pk, self.identificacion, self.estado)
 
     def obtener_rol(self):
-        nombres = self.groups.order_by('name').values_list('name', flat=True)
+        nombres = sorted(grupo.name for grupo in self.groups.all())
         return ', '.join(nombres) or None
 
     def es_gerente(self):
