@@ -14,14 +14,16 @@ from ..gestion_usuario.views import (
     SoloGerenteMixin, SoloAuxiliarMixin, SoloNominaMixin, SoloGerenteOAuxiliarMixin,
 )
 from .models import Nomina, HoraExtra, Solicitud, ConfiguracionBonificacion
-from .forms import HoraExtraForm, SolicitudForm, SolicitudAprobarForm, BonificacionForm, \
-    SolicitudVacacionesForm
-from .forms import ReporteFiltroForm
+from .forms import (
+    BonificacionForm, HistorialFiltroForm, HoraExtraForm, ReporteFiltroForm,
+    SolicitudAprobarForm, SolicitudCertificadoForm, SolicitudVacacionesForm,
+)
 from .reportes import resumen_mensual, nombre_periodo
 from .services import (calcular_horas_extra, generar_prenomina, aceptar_prenomina,
                       rechazar_prenomina)
 from .excepciones import NominaError
 from .pdf import generar_pdf_reporte
+from ..validaciones import normalizar_espacios, validar_texto_seguro
 
 
 def periodo_actual():
@@ -83,7 +85,7 @@ class NominaConsultarView(SoloNominaMixin, TemplateView):
             'nomina': nomina, 'nomina_pendiente': pendiente,
             'periodo': periodo,
             'solicitudes': Solicitud.objects.filter(usuario=usuario)[:5],
-            'form_solicitud': SolicitudForm(),
+            'form_solicitud': SolicitudCertificadoForm(),
             'salario_base': usuario.salario_base,
             'hoy': date.today(),
             'nombre_periodo': nombre_periodo(periodo),
@@ -93,10 +95,11 @@ class NominaConsultarView(SoloNominaMixin, TemplateView):
         return context
 
     def post(self, request, *args, **kwargs):
-        form = SolicitudForm(request.POST)
+        form = SolicitudCertificadoForm(request.POST)
         if form.is_valid():
             solicitud = form.save(commit=False)
             solicitud.usuario = request.user
+            solicitud.tipo = Solicitud.Tipo.CERTIFICADO
             solicitud.save()
             Auditoria.objects.create(
                 usuario=request.user,
@@ -104,6 +107,8 @@ class NominaConsultarView(SoloNominaMixin, TemplateView):
                 detalle='Solicitó {0}'.format(solicitud.get_tipo_display()),
             )
             messages.success(request, 'Solicitud enviada.')
+        else:
+            messages.error(request, next(iter(form.errors.values()))[0])
         return redirect('nomina_consultar')
 
 
@@ -114,15 +119,18 @@ class NominaHistorialView(SoloNominaMixin, ListView):
 
     def get_queryset(self):
         qs = Solicitud.objects.filter(usuario=self.request.user)
-        tipo = self.request.GET.get('tipo')
-        desde = self.request.GET.get('desde')
-        hasta = self.request.GET.get('hasta')
-        if tipo:
-            qs = qs.filter(tipo=tipo)
-        if desde:
-            qs = qs.filter(fecha_desde__gte=desde)
-        if hasta:
-            qs = qs.filter(fecha_hasta__lte=hasta)
+        form = HistorialFiltroForm(self.request.GET)
+        self.filtro_form = form
+        if form.is_valid():
+            datos = form.cleaned_data
+            if datos['tipo']:
+                qs = qs.filter(tipo=datos['tipo'])
+            if datos['desde']:
+                qs = qs.filter(fecha_desde__gte=datos['desde'])
+            if datos['hasta']:
+                qs = qs.filter(fecha_hasta__lte=datos['hasta'])
+        else:
+            messages.error(self.request, next(iter(form.errors.values()))[0])
         return qs
 
     def get_context_data(self, **kwargs):
@@ -186,7 +194,7 @@ class HorasExtraView(SoloGerenteMixin, FormView):
             else:
                 messages.info(self.request,
                     'No superó la jornada de 8.4 horas: no se registran extras.')
-        except ValueError as e:
+        except NominaError as e:
             messages.error(self.request, str(e))
         return redirect(self.success_url)
 
@@ -261,7 +269,10 @@ class CalculoNominaView(SoloGerenteMixin, TemplateView):
         context.update({
             'periodo': periodo, 'nominas': nominas, 'estado_periodo': estado_periodo,
             'puede_calcular': estado_periodo is None or estado_periodo == Nomina.Estado.RECHAZADA,
-            'motivo_rechazo': primera.motivo_rechazo if primera and estado_periodo == Nomina.Estado.RECHAZADA else '',
+            'motivo_rechazo': (
+                primera.motivo_rechazo
+                if primera and estado_periodo == Nomina.Estado.RECHAZADA else ''
+            ),
             'fecha_revision': primera.fecha_revision if primera else None,
             'revisada_por': primera.revisada_por if primera else None,
             'hoy': date.today(),
@@ -301,6 +312,15 @@ class VacacionesView(SoloNominaMixin, FormView):
     def get_initial(self):
         return {'tipo': Solicitud.Tipo.VACACIONES}
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['usuario'] = self.request.user
+        return kwargs
+
+    def form_invalid(self, form):
+        messages.error(self.request, 'Revisa las fechas de tus vacaciones.')
+        return super().form_invalid(form)
+
     def form_valid(self, form):
         solicitud = form.save(commit=False)
         solicitud.usuario = self.request.user
@@ -330,21 +350,39 @@ class BandejaAprobacionView(SoloAuxiliarMixin, ListView):
         return Solicitud.objects.select_related('usuario').filter(estado=Solicitud.Estado.PENDIENTE)
 
     def post(self, request, *args, **kwargs):
+        solicitud_id = request.POST.get('solicitud_id', '')
+        if not solicitud_id.isdigit():
+            messages.error(request, 'La solicitud indicada no es válida.')
+            return redirect('bandeja_aprobacion')
         solicitud = get_object_or_404(
-            Solicitud, pk=request.POST.get('solicitud_id'), estado=Solicitud.Estado.PENDIENTE)
+            Solicitud, pk=int(solicitud_id), estado=Solicitud.Estado.PENDIENTE)
         accion = request.POST.get('accion')
         if accion not in ('aprobar', 'rechazar'):
             messages.error(request, 'Acción no válida.')
             return redirect('bandeja_aprobacion')
+        motivo_rechazo = normalizar_espacios(request.POST.get('motivo_rechazo', ''))
+        if motivo_rechazo:
+            try:
+                validar_texto_seguro(motivo_rechazo, 'El motivo del rechazo')
+            except Exception as error:
+                messages.error(request, error.messages[0])
+                return redirect('bandeja_aprobacion')
+            if len(motivo_rechazo) > 200:
+                messages.error(request, 'El motivo del rechazo admite máximo 200 caracteres.')
+                return redirect('bandeja_aprobacion')
         if solicitud.tipo == Solicitud.Tipo.NOMINA:
             nombre = nombre_periodo(solicitud.periodo)
             try:
                 if accion == 'aprobar':
                     cantidad = aceptar_prenomina(solicitud, request.user)
-                    messages.success(request, 'Pre-nómina de {0} aceptada: {1} nóminas aplicadas.'.format(nombre, cantidad))
+                    messages.success(request, (
+                        'Pre-nómina de {0} aceptada: {1} nóminas aplicadas.'.format(nombre, cantidad))
+                    )
                 else:
-                    rechazar_prenomina(solicitud, request.user, request.POST.get('motivo_rechazo'))
-                    messages.success(request, 'Pre-nómina de {0} rechazada. El Gerente puede recalcularla.'.format(nombre))
+                    rechazar_prenomina(solicitud, request.user, motivo_rechazo)
+                    messages.success(request, (
+                        'Pre-nómina de {0} rechazada. El Gerente puede recalcularla.'.format(nombre))
+                    )
             except NominaError as error:
                 messages.error(request, str(error))
             return redirect('bandeja_aprobacion')
@@ -354,7 +392,7 @@ class BandejaAprobacionView(SoloAuxiliarMixin, ListView):
             mensaje = 'Solicitud de {0} aprobada.'.format(solicitud.usuario.username)
         else:
             solicitud.estado = Solicitud.Estado.RECHAZADA
-            solicitud.motivo_rechazo = request.POST.get('motivo_rechazo') or 'Sin motivo especificado'
+            solicitud.motivo_rechazo = motivo_rechazo or 'Sin motivo especificado'
             mensaje = 'Solicitud de {0} rechazada.'.format(solicitud.usuario.username)
         solicitud.save()
         Auditoria.objects.create(

@@ -11,7 +11,7 @@ from aplicaciones.validaciones import (
     normalizar_espacios, validar_fecha_no_futura, validar_solo_digitos,
     validar_solo_letras, validar_usuario,
 )
-from .models import Usuario
+from .models import Usuario, Auditoria
 
 
 class UsuarioValidacionMixin(forms.Form):
@@ -209,3 +209,29 @@ class RolForm(forms.ModelForm):
         if existentes.exists():
             raise ValidationError('Ya existe un rol con ese nombre.')
         return valor
+
+
+class AuditoriaFiltroForm(forms.Form):
+    fecha = forms.DateField(
+        required=False,
+        error_messages={'invalid': 'Escribe una fecha v\u00e1lida en el filtro.'},
+    )
+    accion = forms.ChoiceField(
+        required=False,
+        error_messages={'invalid_choice': 'Selecciona una acci\u00f3n v\u00e1lida.'},
+    )
+    usuario = forms.ModelChoiceField(queryset=Usuario.objects.all(), required=False,
+        error_messages={'invalid_choice': 'Selecciona un usuario válido.'})
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['accion'].choices = [('', 'Todas')] + list(Auditoria.Accion.choices)
+
+    def clean_fecha(self):
+        fecha = self.cleaned_data.get('fecha')
+        if fecha:
+            try:
+                validar_fecha_no_futura(fecha, 'La fecha del filtro')
+            except ValidationError:
+                raise forms.ValidationError('La fecha del filtro no puede ser posterior a hoy.')
+        return fecha

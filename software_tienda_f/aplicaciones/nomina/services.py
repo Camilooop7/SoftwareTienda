@@ -5,7 +5,7 @@ from django.utils import timezone
 from aplicaciones.gestion_usuario.models import Auditoria, Usuario
 from .models import HoraExtra, Nomina, ConfiguracionBonificacion, Solicitud
 from .excepciones import (
-    MotivoRechazoRequeridoError, NominaYaCalculadaError,
+    HoraExtraInvalidaError, MotivoRechazoRequeridoError, NominaYaCalculadaError,
     PreNominaNoPendienteError, SinEmpleadosActivosError,
 )
 from .reportes import nombre_periodo
@@ -24,7 +24,7 @@ PCT_DEDUCCIONES = PCT_SALUD + PCT_PENSION
 def calcular_horas_extra(usuario, fecha, hora_ingreso, hora_salida, motivo):
 
     if hora_salida <= hora_ingreso:
-        raise ValueError('La hora de salida debe ser posterior a la de ingreso.')
+        raise HoraExtraInvalidaError('La hora de salida debe ser posterior a la hora de ingreso.')
 
     delta = (datetime.combine(fecha, hora_salida) - datetime.combine(fecha, hora_ingreso))
     horas_trabajadas = Decimal(str(delta.total_seconds() / 3600)).quantize(Decimal('0.1'))

@@ -26,3 +26,7 @@ class PreNominaNoPendienteError(NominaError):
 class MotivoRechazoRequeridoError(NominaError):
     def __init__(self):
         super().__init__('Debes escribir el motivo del rechazo de la pre-nómina.')
+
+
+class HoraExtraInvalidaError(NominaError):
+    pass

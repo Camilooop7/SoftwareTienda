@@ -177,3 +177,20 @@ class ValidacionesGestionUsuarioTest(TestCase):
             with transaction.atomic():
                 Usuario.objects.create_user(username='negativo', email='neg@example.com',
                                             password='Clave#123', salario_base=-1)
+
+
+class AuditoriaFiltroValidacionTest(TestCase):
+    def test_fecha_invalida_muestra_error_y_responde_200(self):
+        gerente_group, _ = Group.objects.get_or_create(name='Gerente')
+        gerente = Usuario.objects.create_user(
+            username='auditoria-filtro-gerente',
+            email='auditoria-filtro-gerente@example.com',
+            password='clave',
+        )
+        gerente.groups.add(gerente_group)
+        self.client.force_login(gerente)
+
+        response = self.client.get(reverse('auditoria'), {'fecha': 'xx'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Escribe una fecha válida en el filtro.')

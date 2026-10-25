@@ -13,7 +13,9 @@ from django.contrib.auth.signals import (
 from django.contrib.auth.models import Group
 from django.dispatch import receiver
 from .models import Usuario, Auditoria
-from .forms import UsuarioCrearForm, UsuarioActualizarForm, RolForm
+from .forms import (
+    AuditoriaFiltroForm, UsuarioCrearForm, UsuarioActualizarForm, RolForm,
+)
 
 
 class SoloGerenteMixin:
@@ -174,18 +176,18 @@ class AuditoriaListView(LoginRequiredMixin, SoloGerenteMixin, ListView):
 
     def get_queryset(self):
         queryset = super().get_queryset().select_related('usuario')
-
-        fecha = self.request.GET.get('fecha')
-        accion = self.request.GET.get('accion')
-        usuario_id = self.request.GET.get('usuario')
-
-        if fecha:
-            queryset = queryset.filter(fecha=fecha)
-        if accion:
-            queryset = queryset.filter(accion=accion)
-        if usuario_id:
-            queryset = queryset.filter(usuario_id=usuario_id)
-
+        form = AuditoriaFiltroForm(self.request.GET)
+        self.filtro_form = form
+        if form.is_valid():
+            datos = form.cleaned_data
+            if datos['fecha']:
+                queryset = queryset.filter(fecha=datos['fecha'])
+            if datos['accion']:
+                queryset = queryset.filter(accion=datos['accion'])
+            if datos['usuario']:
+                queryset = queryset.filter(usuario=datos['usuario'])
+        else:
+            messages.error(self.request, next(iter(form.errors.values()))[0])
         return queryset
 
     def get_context_data(self, **kwargs):

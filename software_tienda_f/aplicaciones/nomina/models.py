@@ -1,5 +1,7 @@
 from django.db import models
 from django.conf import settings
+from django.db.models import Q, F
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class ConfiguracionBonificacion(models.Model):
@@ -8,8 +10,20 @@ class ConfiguracionBonificacion(models.Model):
         on_delete=models.CASCADE,
         related_name='bonificacion_config',
     )
-    porcentaje = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    meta_mensual = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    porcentaje = models.DecimalField(max_digits=5, decimal_places=2, default=0, validators=[MinValueValidator(0.01, 'bonificacion_porcentaje_valido'), MaxValueValidator(100, 'bonificacion_porcentaje_valido')])
+    meta_mensual = models.DecimalField(max_digits=14, decimal_places=2, default=0, validators=[MinValueValidator(0.01, 'bonificacion_meta_positiva')])
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(porcentaje__gt=0) & Q(porcentaje__lte=100),
+                name='bonificacion_porcentaje_valido',
+            ),
+            models.CheckConstraint(
+                condition=Q(meta_mensual__gt=0),
+                name='bonificacion_meta_positiva',
+            ),
+        ]
 
     def __str__(self):
         return '{0} - {1}%'.format(self.usuario.username, self.porcentaje)
@@ -36,6 +50,11 @@ class HoraExtra(models.Model):
 
     class Meta:
         ordering = ['-fecha']
+        constraints = [
+            models.CheckConstraint(condition=Q(cantidad_horas__gt=0), name='horaextra_cantidad_positiva'),
+            models.CheckConstraint(condition=Q(valor__gte=0), name='horaextra_valor_no_negativo'),
+            models.CheckConstraint(condition=Q(hora_salida__gt=F('hora_ingreso')), name='horaextra_salida_posterior'),
+        ]
 
 
 class Solicitud(models.Model):
@@ -65,6 +84,9 @@ class Solicitud(models.Model):
 
     class Meta:
         ordering = ['-fecha_solicitud']
+        constraints = [models.CheckConstraint(
+            condition=Q(fecha_desde__isnull=True) | Q(fecha_hasta__isnull=True) | Q(fecha_hasta__gte=F('fecha_desde')),
+            name='solicitud_fechas_ordenadas')]
 
 
 class Nomina(models.Model):
@@ -107,5 +129,10 @@ class Nomina(models.Model):
     class Meta:
         unique_together = ('usuario', 'periodo')
         ordering = ['-periodo']
+        constraints = [
+            models.CheckConstraint(condition=Q(salario_bruto__gte=0), name='nomina_salario_no_negativo'),
+            models.CheckConstraint(condition=Q(deducciones__gte=0), name='nomina_deducciones_no_negativas'),
+            models.CheckConstraint(condition=Q(total_pagar__gte=0), name='nomina_total_no_negativo'),
+        ]
 
 

@@ -53,11 +53,9 @@
     {% csrf_token %}
     {{ form_solicitud.non_field_errors }}
     <p><label>Tipo</label>
-        <select name="tipo" id="id_tipo">
-            <option value="CERTIFICADO">Certificado</option>
-        </select>
+        <span>Certificado laboral</span>
     </p>
-    <p><label>Motivo</label> {{ form_solicitud.motivo }}</p>
+    <p><label>Motivo</label> {{ form_solicitud.motivo }} {{ form_solicitud.motivo.errors }}</p>
     <button type="submit" class="button-submit" style="max-width:240px;">Solicitar</button>
 </form>
 
