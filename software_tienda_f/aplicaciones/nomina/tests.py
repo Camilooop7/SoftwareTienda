@@ -709,6 +709,57 @@ class ValidacionesServidorNominaTest(TestCase):
             'La nómina de {0} ya fue calculada; no se pueden registrar más horas extra de ese mes.'.format(
                 nombre_periodo(fecha.strftime('%Y-%m'))))
 
+    def test_vista_horas_extra_no_duplica_y_muestra_error(self):
+        hoy = timezone.localdate()
+        HoraExtra.objects.create(usuario=self.empleado, fecha=hoy,
+            hora_ingreso=time(8), hora_salida=time(18), tipo=HoraExtra.Tipo.DIURNA,
+            cantidad_horas=Decimal('1.60'), valor=0, motivo='Trabajo extra',
+            periodo=hoy.strftime('%Y-%m'))
+        self.client.force_login(self.gerente)
+        response = self.client.post(reverse('horas_extra'), {
+            'usuario': self.empleado.pk, 'fecha': hoy.isoformat(),
+            'hora_ingreso': '08:00', 'hora_salida': '18:00',
+            'motivo': 'Inventario de bodega',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(HoraExtra.objects.filter(usuario=self.empleado).count(), 1)
+        self.assertContains(response,
+            'Ya hay horas extra registradas para Ana Prueba el {0}.'.format(hoy.strftime('%d/%m/%Y')))
+        self.assertContains(response, 'Inventario de bodega')
+
+    def test_vista_horas_extra_bloqueada_por_nomina(self):
+        hoy = timezone.localdate()
+        Nomina.objects.create(usuario=self.empleado, periodo=hoy.strftime('%Y-%m'),
+            salario_bruto=1000000, deducciones=0, total_pagar=1000000,
+            estado=Nomina.Estado.PENDIENTE)
+        self.client.force_login(self.gerente)
+        response = self.client.post(reverse('horas_extra'), {
+            'usuario': self.empleado.pk, 'fecha': hoy.isoformat(),
+            'hora_ingreso': '08:00', 'hora_salida': '18:00',
+            'motivo': 'Inventario de bodega',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(HoraExtra.objects.filter(usuario=self.empleado).count(), 0)
+        self.assertContains(response,
+            'La nómina de {0} ya fue calculada; no se pueden registrar más horas extra de ese mes.'.format(
+                nombre_periodo(hoy.strftime('%Y-%m'))))
+
+    def test_vista_horas_extra_valida_redirige(self):
+        ayer = timezone.localdate() - timedelta(days=1)
+        self.client.force_login(self.gerente)
+        response = self.client.post(reverse('horas_extra'), {
+            'usuario': self.empleado.pk, 'fecha': ayer.isoformat(),
+            'hora_ingreso': '07:00', 'hora_salida': '19:00',
+            'motivo': 'Inventario de bodega',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'],
+            reverse('novedades') + '?seccion=horas-extra#horas-extra')
+        self.assertEqual(HoraExtra.objects.filter(usuario=self.empleado).count(), 1)
+
     def test_bonificacion_porcentaje_cero(self):
         form = BonificacionForm(data={'usuario': self.empleado.pk, 'porcentaje': '0', 'meta_mensual': '100'})
         self.assertFalse(form.is_valid())
