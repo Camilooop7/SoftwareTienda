@@ -138,6 +138,20 @@ class PreNominaFlujoTest(TestCase):
         with self.assertRaises(SinEmpleadosActivosError):
             self._generar()
 
+    def test_empleado_nuevo_solo_recibe_nomina_desde_su_ingreso(self):
+        nuevo = Usuario.objects.create_user(
+            username='prenomina-nuevo', email='prenomina-nuevo@example.com',
+            password='test-password', fecha_ingreso='2026-10-15',
+            salario_base=Decimal('2000000'),
+        )
+        solicitud = generar_prenomina('2026-09', self.gerente)
+        aceptar_prenomina(solicitud, self.auxiliar)
+        self.assertFalse(Nomina.objects.filter(usuario=nuevo, periodo='2026-09').exists())
+
+        solicitud = generar_prenomina('2026-11', self.gerente)
+        aceptar_prenomina(solicitud, self.auxiliar)
+        self.assertTrue(Nomina.objects.filter(usuario=nuevo, periodo='2026-11').exists())
+
 
 from django.test import SimpleTestCase
 from ..excepciones import HoraExtraInvalidaError, NominaYaCalculadaError, SinEmpleadosActivosError, PreNominaNoPendienteError, MotivoRechazoRequeridoError

@@ -1,6 +1,8 @@
-from datetime import datetime, timedelta
+import calendar
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 from aplicaciones.gestion_usuario.models import Auditoria, Usuario
 from .models import HoraExtra, Nomina, ConfiguracionBonificacion, Solicitud
@@ -91,7 +93,11 @@ def generar_prenomina(periodo, calculada_por):
         raise NominaYaCalculadaError(periodo, 'aceptada')
     existentes.filter(estado=Nomina.Estado.RECHAZADA).delete()
 
-    empleados = Usuario.objects.filter(is_active=True)
+    anio, mes = (int(parte) for parte in periodo.split('-'))
+    ultimo_dia = calendar.monthrange(anio, mes)[1]
+    empleados = Usuario.objects.filter(is_active=True).filter(
+        Q(fecha_ingreso__isnull=True) | Q(fecha_ingreso__lte=date(anio, mes, ultimo_dia))
+    )
     if not empleados.exists():
         raise SinEmpleadosActivosError(periodo)
 
