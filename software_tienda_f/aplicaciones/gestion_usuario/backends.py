@@ -1,6 +1,5 @@
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth import get_user_model
-from django.db.models import Q
 
 
 class CorreoOUsuarioBackend(ModelBackend):
@@ -9,9 +8,12 @@ class CorreoOUsuarioBackend(ModelBackend):
         if credencial is None or password is None:
             return None
         UserModel = get_user_model()
-        usuario = UserModel._default_manager.filter(
-            Q(username__iexact=credencial) | Q(email__iexact=credencial)
-        ).first()
-        if usuario and usuario.check_password(password) and self.user_can_authenticate(usuario):
+        campo = 'email__iexact' if '@' in credencial else 'username__iexact'
+        candidatos = list(UserModel._default_manager.filter(**{campo: credencial})[:2])
+        if len(candidatos) != 1:
+            UserModel().set_password(password)
+            return None
+        usuario = candidatos[0]
+        if usuario.check_password(password) and self.user_can_authenticate(usuario):
             return usuario
         return None

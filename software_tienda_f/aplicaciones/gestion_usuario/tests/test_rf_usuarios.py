@@ -77,6 +77,17 @@ class LoginT61Test(BaseGestionUsuariosT61):
         respuesta = self.iniciar(self.usuario.username)
         self.assertEqual(respuesta.get("Location"), reverse("perfil_actual"))
 
+    @caso('RF-010', 'Validar que un correo inicie sesión en su propia cuenta aunque otro usuario tenga ese texto como nombre de usuario.',
+          "Usuario A con username 'login-t61@example.com' y clave 'OtraClave9'; usuario B con ese correo; se ingresa el correo con la clave de B",
+          'Inicia sesión el usuario B (dueño del correo)')
+    def test_login_correo_no_confunde_con_username(self):
+        Usuario.objects.create_user(username='login-t61@example.com', email='otro-t61@example.com',
+                                    password='OtraClave9', identificacion=77700001)
+        self.client.post(reverse("login"), {"username": self.usuario.email, "password": "ClaveSegura1"})
+        sesion = self.client.session.get('_auth_user_id')
+        self.obtenido(f"Sesión iniciada para: {Usuario.objects.get(pk=sesion).username if sesion else 'nadie'}")
+        self.assertEqual(str(sesion), str(self.usuario.pk))
+
     @caso('RF-010', 'Validar el mensaje de credenciales incorrectas.',
           "correo válido; contraseña 'Incorrecta1'", 'Correo/usuario o contraseña incorrectos.')
     def test_contrasena_incorrecta_muestra_mensaje(self):
