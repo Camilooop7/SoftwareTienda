@@ -1,0 +1,22 @@
+{% extends 'index.html' %}
+{% block titulo %}Novedades{% endblock %}
+{% block mod_nomina %}abierto{% endblock %}
+{% block menu_novedades %}activo{% endblock %}
+{% block encabezado %}Novedades{% endblock %}
+
+{% block contenido %}
+<p class="novedades-intro">Registra las novedades que afectan la nómina del mes: bonificaciones por cumplimiento de metas y horas extra.</p>
+
+<nav class="novedades-tabs" aria-label="Secciones de novedades">
+    <a href="#bonificaciones" class="btn {% if seccion_activa == 'bonificaciones' %}btn-morado{% else %}btn-linea{% endif %}">Bonificaciones</a>
+    <a href="#horas-extra" class="btn {% if seccion_activa == 'horas-extra' %}btn-morado{% else %}btn-linea{% endif %}">Horas extra</a>
+</nav>
+
+<section class="novedad-seccion" id="bonificaciones">
+    {% include '_novedad_bonificaciones.html' %}
+</section>
+
+<section class="novedad-seccion" id="horas-extra">
+    {% include '_novedad_horas_extra.html' %}
+</section>
+{% endblock %}

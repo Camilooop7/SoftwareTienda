@@ -58,7 +58,7 @@
 <form method="post" action="{% url 'bandeja_aprobacion' %}" class="form-accion">
     {% csrf_token %}
     <input type="hidden" name="solicitud_id" value="{{ solicitud.pk }}">
-    <input type="text" name="motivo_rechazo" maxlength="200" placeholder="Motivo del rechazo">
+    <input type="text" name="motivo_rechazo" maxlength="200" data-solo="texto" placeholder="Motivo del rechazo">
     <button type="submit" name="accion" value="aprobar" class="btn btn-linea">✓ Aprobar</button>
     <button type="submit" name="accion" value="rechazar" class="btn btn-rojo">✗ Rechazar</button>
 </form>

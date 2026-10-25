@@ -1,0 +1,29 @@
+{% load formatos %}
+<h3 style="margin-bottom:12px;">Registro de horas extra</h3>
+
+<form method="post" action="{% url 'horas_extra' %}" class="form-capsula" style="max-width:100%;">
+    {% csrf_token %}
+    {{ form_hora_extra.non_field_errors }}
+    <p><label>Trabajador</label> {{ form_hora_extra.usuario }} {{ form_hora_extra.usuario.errors }}</p>
+    <p><label>Fecha</label> {{ form_hora_extra.fecha }} {{ form_hora_extra.fecha.errors }}</p>
+    <p><label>Hora ingreso</label> {{ form_hora_extra.hora_ingreso }} {{ form_hora_extra.hora_ingreso.errors }}</p>
+    <p><label>Hora salida</label> {{ form_hora_extra.hora_salida }} {{ form_hora_extra.hora_salida.errors }}</p>
+    <p><label>Motivo</label> {{ form_hora_extra.motivo }} {{ form_hora_extra.motivo.errors }}</p>
+    <button type="submit" class="button-submit" style="max-width:220px;">Registrar</button>
+</form>
+
+<table style="margin-top:22px;">
+    <tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Valor</th><th>Motivo</th><th>Trabajador</th></tr>
+    {% for h in horas %}
+    <tr>
+        <td>{{ h.fecha|date:"d/m/Y" }}</td>
+        <td>{{ h.get_tipo_display }}</td>
+        <td>{{ h.cantidad_horas|floatformat:2 }}</td>
+        <td>{{ h.valor|moneda }}</td>
+        <td>{{ h.motivo }}</td>
+        <td>{{ h.usuario.get_full_name|default:h.usuario.username }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6">No hay horas extra registradas.</td></tr>
+    {% endfor %}
+</table>

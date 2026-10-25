@@ -7,15 +7,29 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 
 
 class UsuarioCrearForm(UserCreationForm):
+    salario_base = forms.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        localize=True,
+        widget=forms.TextInput(attrs={
+            'min': 0,
+            'inputmode': 'decimal',
+            'data-solo': 'decimal',
+            'maxlength': '15',
+            'placeholder': 'Salario base en pesos',
+        }),
+    )
     identificacion = forms.IntegerField(
         label='Identificación',
         required=True,
         validators=[
             MinValueValidator(1, message='La identificación no puede ser negativa ni cero.'),
         ],
-        widget=forms.NumberInput(attrs={
+        widget=forms.TextInput(attrs={
             'min': 1,
             'inputmode': 'numeric',
+            'data-solo': 'numeros',
+            'maxlength': '12',
             'placeholder': 'Solo números',
         }),
     )
@@ -61,14 +75,11 @@ class UsuarioCrearForm(UserCreationForm):
         }
 
         widgets = {
+            'username': forms.TextInput(attrs={'data-solo': 'usuario', 'maxlength': '150'}),
+            'first_name': forms.TextInput(attrs={'data-solo': 'letras', 'maxlength': '150'}),
+            'last_name': forms.TextInput(attrs={'data-solo': 'letras', 'maxlength': '150'}),
             'estado': forms.Select(choices=Usuario.Estado.choices),
             'groups': forms.CheckboxSelectMultiple,
-            'salario_base': forms.NumberInput(attrs={
-                'min': 0,
-                'step': '0.01',
-                'inputmode': 'numeric',
-                'placeholder': 'Salario base en pesos',
-            }),
         }
 
     def __init__(self, *args, **kwargs):
@@ -90,15 +101,29 @@ class UsuarioCrearForm(UserCreationForm):
 
 
 class UsuarioActualizarForm(forms.ModelForm):
+    salario_base = forms.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        localize=True,
+        widget=forms.TextInput(attrs={
+            'min': 0,
+            'inputmode': 'decimal',
+            'data-solo': 'decimal',
+            'maxlength': '15',
+            'placeholder': 'Salario base en pesos',
+        }),
+    )
     identificacion = forms.IntegerField(
         label='Identificación',
         required=True,
         validators=[
             MinValueValidator(1, message='La identificación no puede ser negativa ni cero.'),
         ],
-        widget=forms.NumberInput(attrs={
+        widget=forms.TextInput(attrs={
             'min': 1,
             'inputmode': 'numeric',
+            'data-solo': 'numeros',
+            'maxlength': '12',
             'placeholder': 'Solo números'
         }),
     )
@@ -139,14 +164,11 @@ class UsuarioActualizarForm(forms.ModelForm):
         }
 
         widgets = {
+            'username': forms.TextInput(attrs={'data-solo': 'usuario', 'maxlength': '150'}),
+            'first_name': forms.TextInput(attrs={'data-solo': 'letras', 'maxlength': '150'}),
+            'last_name': forms.TextInput(attrs={'data-solo': 'letras', 'maxlength': '150'}),
             'estado': forms.Select(choices=Usuario.Estado.choices),
             'groups': forms.CheckboxSelectMultiple,
-            'salario_base': forms.NumberInput(attrs={
-                'min': 0,
-                'step': '0.01',
-                'inputmode': 'numeric',
-                'placeholder': 'Salario base en pesos',
-            }),
         }
 
     def __init__(self, *args, **kwargs):
@@ -167,6 +189,9 @@ class RolForm(forms.ModelForm):
     class Meta:
         model = Group
         fields = ['name', 'permissions']
+        widgets = {'name': forms.TextInput(attrs={
+            'data-solo': 'letras', 'maxlength': '150',
+        })}
 
         labels = {
             'name': 'Nombre del rol',

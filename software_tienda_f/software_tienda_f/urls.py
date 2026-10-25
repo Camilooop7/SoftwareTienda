@@ -32,6 +32,7 @@ urlpatterns = [
     path('roles/', RolListView.as_view(), name='roles'),
     path('roles/<int:pk>/editar/', RolEditarView.as_view(), name='rol_editar'),
     path('nomina/', NominaConsultarView.as_view(), name='nomina_consultar'),
+    path('nomina/novedades/', NovedadesView.as_view(), name='novedades'),
     path('nomina/historial/', NominaHistorialView.as_view(), name='nomina_historial'),
     path('nomina/horas-extra/', HorasExtraView.as_view(), name='horas_extra'),
     path('nomina/bonificaciones/', BonificacionesView.as_view(), name='bonificaciones'),

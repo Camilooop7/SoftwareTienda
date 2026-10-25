@@ -33,15 +33,34 @@ class ReporteFiltroForm(forms.Form):
         return '{0:04d}-{1:02d}'.format(ano, mes)
 
 class HoraExtraForm(forms.Form):
-    usuario = forms.ModelChoiceField(queryset=Usuario.objects.all(), label='Trabajador')
+    usuario = forms.ModelChoiceField(
+        queryset=Usuario.objects.filter(is_active=True).order_by('first_name'),
+        empty_label='- Selecciona un trabajador -',
+        label='Trabajador',
+    )
     fecha = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}), label='Fecha')
     hora_ingreso = forms.TimeField(widget=forms.TimeInput(attrs={'type': 'time'}), label='Hora ingreso')
     hora_salida = forms.TimeField(widget=forms.TimeInput(attrs={'type': 'time'}), label='Hora salida')
-    motivo = forms.CharField(max_length=200, label='Motivo',
-                             widget=forms.TextInput(attrs={'placeholder': 'Ej: Inventario'}))
+    motivo = forms.CharField(
+        max_length=200,
+        label='Motivo',
+        widget=forms.TextInput(attrs={
+            'placeholder': 'Ej: Inventario',
+            'data-solo': 'texto',
+            'maxlength': '200',
+        }),
+    )
 
 
 class SolicitudForm(forms.ModelForm):
+    motivo = forms.CharField(
+        max_length=200,
+        widget=forms.TextInput(attrs={
+            'data-solo': 'texto',
+            'maxlength': '200',
+        }),
+    )
+
     class Meta:
         model = Solicitud
         fields = ['tipo', 'motivo', 'fecha_desde', 'fecha_hasta']
@@ -74,6 +93,27 @@ class SolicitudAprobarForm(forms.ModelForm):
 
 
 class BonificacionForm(forms.ModelForm):
+    porcentaje = forms.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        localize=True,
+        widget=forms.TextInput(attrs={
+            'inputmode': 'decimal',
+            'data-solo': 'decimal',
+            'maxlength': '6',
+        }),
+    )
+    meta_mensual = forms.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        localize=True,
+        widget=forms.TextInput(attrs={
+            'inputmode': 'decimal',
+            'data-solo': 'decimal',
+            'maxlength': '15',
+        }),
+    )
+
     class Meta:
         model = ConfiguracionBonificacion
         fields = ['usuario', 'porcentaje', 'meta_mensual']

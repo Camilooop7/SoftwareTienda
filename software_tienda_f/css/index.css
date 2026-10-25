@@ -1105,6 +1105,15 @@ tbody tr:hover {
 .leyenda-distribucion > div { display: flex; align-items: center; gap: 8px; }
 .leyenda-color { display: inline-block; width: 11px; height: 11px; border-radius: 50%; }
 .estado-vacio { padding: 16px; color: #64748B; background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 12px; }
+.campo-bloqueado { border-color: #EC4899 !important; box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.18) !important; }
+.aviso-campo { font-size: 12px; color: #BE185D; margin-top: 4px; }
 .tabla-reporte { width: 100%; }
 .tabla-reporte .monto { text-align: right; white-space: nowrap; }
 tr.fila-total td { background: #F1F5F9; font-weight: 700; border-top: 2px solid #CBD5E1; }
+.novedades-intro { margin: 0 0 18px; color: #475569; }
+.novedades-tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+.novedad-seccion {
+    margin: 20px 0; padding: 20px; background: #fff; border: 1px solid #E2E8F0;
+    border-radius: 16px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    scroll-margin-top: 24px;
+}

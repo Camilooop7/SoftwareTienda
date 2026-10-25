@@ -40,9 +40,9 @@
         <span class="barra-seg--pension" style="width: {{ resumen.pct_pension|stringformat:'s' }}%"></span>
     </div>
     <div class="leyenda-distribucion">
-        <div><span class="leyenda-color barra-seg--neto"></span><span>Total pagado: {{ resumen.total_pagado|moneda }} ({{ resumen.pct_neto }}%)</span></div>
-        <div><span class="leyenda-color barra-seg--salud"></span><span>Salud: {{ resumen.total_salud|moneda }} ({{ resumen.pct_salud }}%)</span></div>
-        <div><span class="leyenda-color barra-seg--pension"></span><span>Pensión: {{ resumen.total_pension|moneda }} ({{ resumen.pct_pension }}%)</span></div>
+        <div><span class="leyenda-color barra-seg--neto"></span><span>Total pagado: {{ resumen.total_pagado|moneda }} ({{ resumen.pct_neto|floatformat:2 }}%)</span></div>
+        <div><span class="leyenda-color barra-seg--salud"></span><span>Salud: {{ resumen.total_salud|moneda }} ({{ resumen.pct_salud|floatformat:2 }}%)</span></div>
+        <div><span class="leyenda-color barra-seg--pension"></span><span>Pensión: {{ resumen.total_pension|moneda }} ({{ resumen.pct_pension|floatformat:2 }}%)</span></div>
     </div>
     {% else %}
     <p class="estado-vacio">No hay nóminas aceptadas para {{ resumen.nombre_periodo }}.</p>

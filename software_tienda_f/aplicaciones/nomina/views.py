@@ -7,6 +7,7 @@ from django.db.models.functions import Coalesce
 from django.views.generic import DetailView
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse, reverse_lazy
+from django.utils.text import format_lazy
 from django.views.generic import TemplateView, ListView, FormView, UpdateView, View
 from ..gestion_usuario.models import Auditoria, Usuario
 from ..gestion_usuario.views import (
@@ -131,10 +132,37 @@ class NominaHistorialView(SoloNominaMixin, ListView):
         return context
 
 
-class HorasExtraView( SoloGerenteMixin, FormView):
-    template_name = 'horas_extra.html'
+def contexto_novedades(form_bonificacion=None, form_hora_extra=None):
+    return {
+        'form_bonificacion': form_bonificacion or BonificacionForm(),
+        'form_hora_extra': form_hora_extra or HoraExtraForm(),
+        'configs': [
+            {'config': c,
+             'valor': (c.porcentaje / 100 * c.meta_mensual).quantize(Decimal('0'))}
+            for c in ConfiguracionBonificacion.objects.select_related('usuario')
+        ],
+        'horas': HoraExtra.objects.select_related('usuario')[:20],
+    }
+
+
+class NovedadesView(SoloGerenteMixin, TemplateView):
+    template_name = 'novedades.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(contexto_novedades())
+        context['seccion_activa'] = self.request.GET.get('seccion', 'bonificaciones')
+        return context
+
+
+class HorasExtraView(SoloGerenteMixin, FormView):
+    template_name = 'novedades.html'
     form_class = HoraExtraForm
-    success_url = reverse_lazy('horas_extra')
+    success_url = format_lazy(
+        '{0}?seccion=horas-extra#horas-extra', reverse_lazy('novedades'))
+
+    def get(self, request, *args, **kwargs):
+        return redirect(self.success_url)
 
     def form_valid(self, form):
         try:
@@ -160,18 +188,27 @@ class HorasExtraView( SoloGerenteMixin, FormView):
                     'No superó la jornada de 8.4 horas: no se registran extras.')
         except ValueError as e:
             messages.error(self.request, str(e))
-        return redirect('horas_extra')
+        return redirect(self.success_url)
+
+    def form_invalid(self, form):
+        messages.error(self.request, 'Revisa los datos de la hora extra.')
+        return super().form_invalid(form)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['horas'] = HoraExtra.objects.select_related('usuario')[:20]
+        context.update(contexto_novedades(form_hora_extra=context['form']))
+        context['seccion_activa'] = 'horas-extra'
         return context
 
 
 class BonificacionesView(SoloGerenteMixin, FormView):
-    template_name = 'bonificaciones.html'
+    template_name = 'novedades.html'
     form_class = BonificacionForm
-    success_url = reverse_lazy('bonificaciones')
+    success_url = format_lazy(
+        '{0}?seccion=bonificaciones#bonificaciones', reverse_lazy('novedades'))
+
+    def get(self, request, *args, **kwargs):
+        return redirect(self.success_url)
 
     def form_valid(self, form):
         usuario = form.cleaned_data['usuario']
@@ -200,7 +237,7 @@ class BonificacionesView(SoloGerenteMixin, FormView):
                 'Bonificación de {0} actualizada: {1}% de ${2}.'.format(
                     usuario.get_full_name() or usuario.username,
                     config.porcentaje, config.meta_mensual))
-        return redirect('bonificaciones')
+        return redirect(self.success_url)
 
     def form_invalid(self, form):
         messages.error(self.request, 'Revisa los datos del formulario.')
@@ -208,11 +245,8 @@ class BonificacionesView(SoloGerenteMixin, FormView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['configs'] = [
-            {'config': c,
-             'valor': (c.porcentaje / 100 * c.meta_mensual).quantize(Decimal('0'))}
-            for c in ConfiguracionBonificacion.objects.select_related('usuario')
-        ]
+        context.update(contexto_novedades(form_bonificacion=context['form']))
+        context['seccion_activa'] = 'bonificaciones'
         return context
 class CalculoNominaView(SoloGerenteMixin, TemplateView):
     template_name = 'calculo_nomina.html'

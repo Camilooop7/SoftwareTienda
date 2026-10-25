@@ -12,9 +12,105 @@ from .excepciones import (
     PreNominaNoPendienteError, SinEmpleadosActivosError,
 )
 from .models import Solicitud
-from .forms import ReporteFiltroForm
+from .forms import BonificacionForm, ReporteFiltroForm
 from .reportes import resumen_mensual
 from .templatetags.formatos import formatear_moneda
+
+
+class NovedadesViewTest(TestCase):
+    def setUp(self):
+        self.gerente_group, _ = Group.objects.get_or_create(name='Gerente')
+        self.vendedor_group, _ = Group.objects.get_or_create(name='Vendedor')
+        self.gerente = Usuario.objects.create_user(
+            username='novedades-gerente', email='novedades-gerente@example.com', password='clave')
+        self.vendedor = Usuario.objects.create_user(
+            username='novedades-vendedor', email='novedades-vendedor@example.com', password='clave')
+        self.empleado = Usuario.objects.create_user(
+            username='novedades-empleado', email='novedades-empleado@example.com', password='clave',
+            salario_base=Decimal('1000000'))
+        self.gerente.groups.add(self.gerente_group)
+        self.vendedor.groups.add(self.vendedor_group)
+
+    def test_pantalla_muestra_ambas_secciones_y_restringe_vendedor(self):
+        self.client.force_login(self.gerente)
+        respuesta = self.client.get(reverse('novedades'))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, 'Configuración de bonificaciones')
+        self.assertContains(respuesta, 'Trabajador')
+        self.assertContains(respuesta, 'action="/nomina/bonificaciones/"')
+        self.assertContains(respuesta, 'action="/nomina/horas-extra/"')
+
+        self.client.force_login(self.vendedor)
+        self.assertEqual(self.client.get(reverse('novedades')).status_code, 403)
+
+    def test_get_de_vistas_antiguas_redirige_a_su_seccion(self):
+        self.client.force_login(self.gerente)
+        for nombre, destino in (
+            ('horas_extra', '?seccion=horas-extra#horas-extra'),
+            ('bonificaciones', '?seccion=bonificaciones#bonificaciones'),
+        ):
+            respuesta = self.client.get(reverse(nombre))
+            self.assertEqual(respuesta.status_code, 302)
+            self.assertEqual(respuesta.url, reverse('novedades') + destino)
+
+    def test_post_valido_bonificaciones_crea_y_actualiza_configuracion(self):
+        self.client.force_login(self.gerente)
+        datos = {'usuario': self.empleado.pk, 'porcentaje': '10', 'meta_mensual': '500000'}
+        respuesta = self.client.post(reverse('bonificaciones'), datos)
+        self.assertEqual(respuesta.url, reverse('novedades') + '?seccion=bonificaciones#bonificaciones')
+        config = ConfiguracionBonificacion.objects.get(usuario=self.empleado)
+        self.assertEqual(config.porcentaje, Decimal('10'))
+
+        datos['porcentaje'] = '15'
+        respuesta = self.client.post(reverse('bonificaciones'), datos)
+        config.refresh_from_db()
+        self.assertEqual(config.porcentaje, Decimal('15'))
+        self.assertEqual(respuesta.status_code, 302)
+
+    def test_post_invalido_bonificacion_renderiza_novedades_con_error(self):
+        self.client.force_login(self.gerente)
+        respuesta = self.client.post(reverse('bonificaciones'), {
+            'usuario': self.empleado.pk, 'porcentaje': '', 'meta_mensual': '500000'})
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTemplateUsed(respuesta, 'novedades.html')
+        self.assertContains(respuesta, 'Este campo es obligatorio.')
+
+    def test_formularios_renderizan_restricciones_de_entrada(self):
+        from aplicaciones.gestion_usuario.forms import UsuarioCrearForm
+
+        self.assertIn('data-solo="numeros"', str(UsuarioCrearForm()['identificacion']))
+        self.assertIn('data-solo="letras"', str(UsuarioCrearForm()['first_name']))
+        self.assertIn('data-solo="decimal"', str(BonificacionForm()['porcentaje']))
+
+    def test_bonificacion_acepta_coma_y_punto_decimal(self):
+        for porcentaje in ('15,5', '15.5'):
+            form = BonificacionForm(data={
+                'usuario': self.empleado.pk,
+                'porcentaje': porcentaje,
+                'meta_mensual': '500000',
+            })
+            self.assertTrue(form.is_valid(), form.errors)
+            self.assertEqual(form.cleaned_data['porcentaje'], Decimal('15.5'))
+
+    def test_novedades_muestra_montos_formateados(self):
+        self.client.force_login(self.gerente)
+        ConfiguracionBonificacion.objects.create(
+            usuario=self.empleado,
+            porcentaje=Decimal('15.5'),
+            meta_mensual=Decimal('1500000'),
+        )
+        respuesta = self.client.get(reverse('novedades'))
+        self.assertContains(respuesta, '$1.500.000')
+        self.assertNotContains(respuesta, '1500000.00')
+
+    def test_post_valido_horas_extra_crea_registro_y_redirige(self):
+        self.client.force_login(self.gerente)
+        respuesta = self.client.post(reverse('horas_extra'), {
+            'usuario': self.empleado.pk, 'fecha': '2026-10-24',
+            'hora_ingreso': '08:00', 'hora_salida': '19:00', 'motivo': 'Inventario'})
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertEqual(respuesta.url, reverse('novedades') + '?seccion=horas-extra#horas-extra')
+        self.assertEqual(HoraExtra.objects.filter(usuario=self.empleado).count(), 1)
 
 
 class CalcularNominaTest(TestCase):
