@@ -94,6 +94,10 @@ class UsuarioCrearView(LoginRequiredMixin, SoloGerenteMixin, CreateView):
     template_name = 'usuario_actualizar.html'
     success_url = reverse_lazy('usuario_usuarios')
 
+    def form_invalid(self, form):
+        messages.error(self.request, 'Revisa los campos marcados en rojo.')
+        return super().form_invalid(form)
+
     def form_valid(self, form):
         respuesta = super().form_valid(form)
         Auditoria.objects.create(
@@ -111,6 +115,10 @@ class UsuarioActualizarView(LoginRequiredMixin, SoloGerenteMixin, UpdateView):
     form_class = UsuarioActualizarForm
     template_name = 'usuario_actualizar.html'
     success_url = reverse_lazy('usuario_usuarios')
+
+    def form_invalid(self, form):
+        messages.error(self.request, 'Revisa los campos marcados en rojo.')
+        return super().form_invalid(form)
 
     def form_valid(self, form):
         respuesta = super().form_valid(form)
@@ -230,6 +238,10 @@ class RolEditarView(LoginRequiredMixin, SoloGerenteMixin, UpdateView):
     form_class = RolForm
     template_name = 'rol_editar.html'
     success_url = reverse_lazy('roles')
+
+    def form_invalid(self, form):
+        messages.error(self.request, 'Revisa los campos marcados en rojo.')
+        return super().form_invalid(form)
 
     def form_valid(self, form):
         respuesta = super().form_valid(form)

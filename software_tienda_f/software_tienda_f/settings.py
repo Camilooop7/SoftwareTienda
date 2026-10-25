@@ -135,6 +135,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
+    {
+        'NAME': 'aplicaciones.gestion_usuario.validators.ComplejidadContrasenaValidator',
+    },
 ]
 
 

@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.db.models import Q
 
 
 class Usuario(AbstractUser):
@@ -9,12 +11,32 @@ class Usuario(AbstractUser):
         INACTIVO = 'INACTIVO', 'Inactivo'
 
     email = models.EmailField(max_length=120,unique=True)
-    identificacion = models.PositiveIntegerField(max_length=25, unique=True, null=True, blank=True)
+    identificacion = models.PositiveBigIntegerField(
+        unique=True, null=True, blank=True,
+        validators=[MinValueValidator(10000), MaxValueValidator(999999999999)],
+    )
     estado = models.CharField(max_length=10, choices=Estado.choices, default=Estado.ACTIVO)
     fecha_ingreso = models.DateField(null=True, blank=True)
-    salario_base = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    salario_base = models.DecimalField(
+        max_digits=14, decimal_places=2, default=0,
+        validators=[MinValueValidator(0)],
+    )
     ultimo_periodo_pagado = models.CharField(max_length=7, blank=True)
     ultimo_total_pagado = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'user'
+        verbose_name_plural = 'users'
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(salario_base__gte=0),
+                name='usuario_salario_base_no_negativo',
+            ),
+            models.CheckConstraint(
+                condition=Q(identificacion__isnull=True) | Q(identificacion__gte=10000),
+                name='usuario_identificacion_valida',
+            ),
+        ]
     def __str__(self):
         return "{0} (ID: {1} - Identificacion: {2} - Estado: {3})".format(self.get_full_name() or self.username,
                                                                           self.pk, self.identificacion, self.estado)
