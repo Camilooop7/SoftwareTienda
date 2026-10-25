@@ -1,0 +1,15 @@
+{% extends 'index.html' %}
+{% block titulo %}Cambiar contraseña{% endblock %}
+{% block mod_gestion %}activo{% endblock %}
+{% block menu_perfil %}activo{% endblock %}
+{% block encabezado %}Cambiar contraseña{% endblock %}
+{% block contenido %}
+<form method="post" class="form-capsula">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <p><label for="{{ form.old_password.id_for_label }}">Contraseña actual</label>{{ form.old_password }}{{ form.old_password.errors }}</p>
+    <p><label for="{{ form.new_password1.id_for_label }}">Nueva contraseña</label>{{ form.new_password1 }}{{ form.new_password1.errors }}</p>
+    <p><label for="{{ form.new_password2.id_for_label }}">Confirmar nueva contraseña</label>{{ form.new_password2 }}{{ form.new_password2.errors }}</p>
+    <button type="submit" class="button-submit">Cambiar contraseña</button>
+</form>
+{% endblock %}

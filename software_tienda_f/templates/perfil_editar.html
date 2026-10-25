@@ -1,0 +1,20 @@
+{% extends 'index.html' %}
+{% block titulo %}Editar mis datos{% endblock %}
+{% block mod_gestion %}activo{% endblock %}
+{% block menu_perfil %}activo{% endblock %}
+{% block encabezado %}Editar mis datos{% endblock %}
+{% block contenido %}
+<form method="post" class="form-capsula">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+    <p>
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {{ field.errors }}
+    </p>
+    {% endfor %}
+    <button type="submit" class="button-submit">Guardar</button>
+    <a href="{% url 'perfil_actual' %}" class="p">Volver al perfil</a>
+</form>
+{% endblock %}

@@ -41,7 +41,7 @@
             <path fill="none" d="M0 0h24v24H0z"></path>
             <path d="M12 20h8v2h-8C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10a9.956 9.956 0 0 1-2 6h-2.708A8 8 0 1 0 12 20zm0-10a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm-4 4a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm8 0a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm-4 4a2 2 0 1 1 0-4 2 2 0 0 1 0 4z" fill="#8B5CF6"></path>
         </svg>
-        <div class="valor">{{ usuario.groups.all.0|default:"Sin rol" }}</div>
+        <div class="valor">{{ usuario.obtener_rol|default:"Sin rol" }}</div>
         <div class="etiqueta">Rol</div>
     </div>
 
@@ -84,6 +84,11 @@
 </div>
 
 <div class="acciones-barra">
+    {% if user.pk == usuario.pk %}
+    <a class="btn btn-morado" href="{% url 'perfil_editar' %}">Editar mis datos</a>
+    <a class="btn btn-linea" href="{% url 'cambiar_contrasena' %}">Cambiar contraseña</a>
+    {% elif user.es_gerente %}
     <a class="btn btn-morado" href="{% url 'usuario_actualizar' usuario.pk %}">Editar</a>
+    {% endif %}
 </div>
 {% endblock %}

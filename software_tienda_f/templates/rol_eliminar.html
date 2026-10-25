@@ -1,0 +1,15 @@
+{% extends 'index.html' %}
+{% block titulo %}Eliminar rol{% endblock %}
+{% block mod_gestion %}activo{% endblock %}
+{% block menu_roles %}activo{% endblock %}
+{% block encabezado %}Eliminar rol{% endblock %}
+{% block contenido %}
+<form method="post" class="form-capsula">
+    {% csrf_token %}
+    <p>¿Confirmas que deseas eliminar el rol <strong>{{ object.name }}</strong>?</p>
+    <div class="form-acciones">
+        <button type="submit" class="btn btn-rojo">Eliminar</button>
+        <a href="{% url 'roles' %}" class="btn btn-linea">Cancelar</a>
+    </div>
+</form>
+{% endblock %}

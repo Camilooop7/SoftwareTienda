@@ -92,21 +92,22 @@ class ValidacionesGestionUsuarioTest(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
         self.assertEqual(str(form.cleaned_data['salario_base']), '1500000.50')
 
-    def test_roles_obligatorio_y_unico(self):
-        self.error_form({'groups': []}, 'groups', 'Selecciona el rol del usuario.')
+    def test_roles_obligatorio_y_varios_permitidos(self):
+        self.error_form({'groups': []}, 'groups', 'Selecciona al menos un rol para el usuario.')
         segundo = Group.objects.create(name='Auxiliar')
-        self.error_form({'groups': [str(self.rol.pk), str(segundo.pk)]}, 'groups',
-                        'Un usuario solo puede tener un rol.')
+        form = UsuarioCrearForm(data=self.datos(groups=[str(self.rol.pk), str(segundo.pk)]))
+        self.assertTrue(form.is_valid(), form.errors)
 
     def test_complejidad_contrasena(self):
         validator = ComplejidadContrasenaValidator()
-        with self.assertRaises(ValidationError) as error:
-            validator.validate('ClaveSegura#')
-        self.assertEqual(error.exception.messages, ['La contraseña debe contener al menos un número.'])
-        with self.assertRaises(ValidationError) as error:
-            validator.validate('ClaveSegura2026')
-        self.assertEqual(error.exception.messages,
-            ['La contraseña debe contener al menos un carácter especial (por ejemplo # $ % &).'])
+        for password, mensaje in [
+            ('clavesegura1', 'La contrase\u00f1a debe contener al menos una letra may\u00fascula.'),
+            ('CLAVESEGURA1', 'La contrase\u00f1a debe contener al menos una letra min\u00fascula.'),
+            ('ClaveSegura', 'La contrase\u00f1a debe contener al menos un n\u00famero.'),
+        ]:
+            with self.assertRaises(ValidationError) as error:
+                validator.validate(password)
+            self.assertEqual(error.exception.messages, [mensaje])
 
     def test_rol_reglas(self):
         form = RolForm(data={'name': 'Rol2', 'permissions': []}, instance=Group(name=''))
@@ -139,7 +140,9 @@ class ComplejidadContrasenaCasosTest(SimpleTestCase):
         validator.validate('Clave#2026')
         self.assertTrue(validator.get_help_text())
 
-    def test_requiere_numero_y_caracter_especial(self):
+    def test_requiere_mayuscula_minuscula_y_numero(self):
         validator = ComplejidadContrasenaValidator()
-        with self.assertRaises(ValidationError): validator.validate('Clave#')
-        with self.assertRaises(ValidationError): validator.validate('Clave2026')
+        validator.validate('Clave2026')
+        for password in ['clave2026', 'CLAVE2026', 'ClaveSegura']:
+            with self.assertRaises(ValidationError):
+                validator.validate(password)

@@ -1,8 +1,8 @@
 {% extends 'index.html' %}
-{% block titulo %}Editar rol{% endblock %}
+{% block titulo %}{% if object %}Editar rol{% else %}Crear rol{% endif %}{% endblock %}
 {% block mod_gestion %}activo{% endblock %}
 {% block menu_roles %}activo{% endblock %}
-{% block encabezado %}Editar rol: {{ form.instance.name }}{% endblock %}
+{% block encabezado %}{% if object %}Editar rol: {{ form.instance.name }}{% else %}Crear rol{% endif %}{% endblock %}
 
 {% block contenido %}
 <form method="post" class="form-capsula" style="max-width:100%;">

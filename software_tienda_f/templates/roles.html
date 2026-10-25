@@ -5,6 +5,9 @@
 {% block encabezado %}Roles y permisos{% endblock %}
 
 {% block contenido %}
+<div class="acciones-barra">
+    <a class="btn btn-morado" href="{% url 'rol_crear' %}">Crear rol</a>
+</div>
 <div class="fichas">
 
     <div class="ficha ficha--violeta">
@@ -26,6 +29,9 @@
         <td>{{ item.descripcion }}</td>
         <td style="text-align:right;">
             <a href="{% url 'rol_editar' item.grupo.pk %}" class="btn btn-linea">Editar</a>
+            {% if item.grupo.name != 'Gerente' and item.grupo.name != 'Auxiliar Administrativo' and item.grupo.name != 'Vendedor' %}
+            <a href="{% url 'rol_eliminar' item.grupo.pk %}" class="btn btn-rojo">Eliminar</a>
+            {% endif %}
         </td>
     </tr>
     {% empty %}

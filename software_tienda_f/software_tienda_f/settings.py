@@ -62,6 +62,7 @@ INSTALLED_APPS = [
 
 ]
 AUTH_USER_MODEL = 'gestion_usuario.Usuario'
+AUTHENTICATION_BACKENDS = ['aplicaciones.gestion_usuario.backends.CorreoOUsuarioBackend']
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'usuario_perfil'
 LOGOUT_REDIRECT_URL = 'login'
@@ -129,9 +130,6 @@ DATABASES = {
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',

@@ -1,7 +1,9 @@
 from datetime import date
 
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import (
+    UserCreationForm, AuthenticationForm, PasswordChangeForm,
+)
 from django.contrib.auth.models import Group, Permission
 from django.core.exceptions import ValidationError
 from django.core.validators import EmailValidator
@@ -12,6 +14,7 @@ from aplicaciones.validaciones import (
     validar_solo_letras, validar_usuario,
 )
 from .models import Usuario, Auditoria
+from aplicaciones.validaciones import validar_texto_seguro
 
 
 class UsuarioValidacionMixin(forms.Form):
@@ -61,7 +64,7 @@ class UsuarioValidacionMixin(forms.Form):
         self.fields['last_name'].required = True
         self.fields['last_name'].error_messages['required'] = 'Escribe los apellidos.'
         self.fields['groups'].required = True
-        self.fields['groups'].error_messages['required'] = 'Selecciona el rol del usuario.'
+        self.fields['groups'].error_messages['required'] = 'Selecciona al menos un rol para el usuario.'
         self.fields['fecha_ingreso'].widget.attrs.update({
             'min': '1950-01-01', 'max': timezone.localdate().isoformat(),
         })
@@ -141,9 +144,7 @@ class UsuarioValidacionMixin(forms.Form):
     def clean_groups(self):
         grupos = self.cleaned_data.get('groups')
         if not grupos:
-            raise ValidationError('Selecciona el rol del usuario.')
-        if grupos.count() != 1:
-            raise ValidationError('Un usuario solo puede tener un rol.')
+            raise ValidationError('Selecciona al menos un rol para el usuario.')
         return grupos
 
 
@@ -171,7 +172,7 @@ class UsuarioCrearForm(UsuarioValidacionMixin, UserCreationForm):
         self.fields['password1'].label = 'Contraseña'
         self.fields['password2'].label = 'Confirmar contraseña'
         self.fields['password1'].help_text = (
-            'Mínimo 8 caracteres, un número y un carácter especial.')
+            'Mínimo 8 caracteres con mayúsculas, minúsculas y números.')
         self.fields['password2'].help_text = 'Escribe la misma contraseña para verificar.'
 
 
@@ -208,6 +209,64 @@ class RolForm(forms.ModelForm):
             existentes = existentes.exclude(pk=self.instance.pk)
         if existentes.exists():
             raise ValidationError('Ya existe un rol con ese nombre.')
+        return valor
+
+
+class PerfilForm(forms.ModelForm):
+    class Meta:
+        model = Usuario
+        fields = ['first_name', 'last_name', 'email']
+        labels = {'first_name': 'Nombres', 'last_name': 'Apellidos',
+                  'email': 'Correo electrónico'}
+        widgets = {
+            'first_name': forms.TextInput(attrs={'data-solo': 'letras', 'maxlength': '150'}),
+            'last_name': forms.TextInput(attrs={'data-solo': 'letras', 'maxlength': '150'}),
+        }
+
+    def clean_first_name(self):
+        return UsuarioValidacionMixin._clean_nombre(self, 'first_name', 'El campo nombres')
+
+    def clean_last_name(self):
+        return UsuarioValidacionMixin._clean_nombre(self, 'last_name', 'El campo apellidos')
+
+    def clean_email(self):
+        valor = self.cleaned_data['email'].strip().lower()
+        try:
+            EmailValidator()(valor)
+        except ValidationError:
+            raise ValidationError('Escribe un correo electrónico válido, por ejemplo nombre@dominio.com.')
+        if Usuario.objects.filter(email__iexact=valor).exclude(pk=self.instance.pk).exists():
+            raise ValidationError('Ya existe un usuario con ese correo electrónico.')
+        return valor
+
+
+class LoginForm(AuthenticationForm):
+    error_messages = {'invalid_login': 'Correo/usuario o contraseña incorrectos.'}
+
+
+class CambiarContrasenaForm(PasswordChangeForm):
+    error_messages = {
+        **PasswordChangeForm.error_messages,
+        'password_incorrect': 'Tu contrase\u00f1a actual es incorrecta.',
+        'password_mismatch': 'Las dos contrase\u00f1as nuevas no coinciden.',
+    }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['old_password'].label = 'Contrase\u00f1a actual'
+        self.fields['new_password1'].label = 'Nueva contrase\u00f1a'
+        self.fields['new_password2'].label = 'Confirmar nueva contrase\u00f1a'
+
+
+class UsuarioFiltroForm(forms.Form):
+    rol = forms.ModelChoiceField(queryset=Group.objects.all().order_by('name'), required=False)
+    estado = forms.ChoiceField(choices=[('', 'Todos')] + list(Usuario.Estado.choices), required=False)
+    nombre = forms.CharField(required=False)
+
+    def clean_nombre(self):
+        valor = normalizar_espacios(self.cleaned_data.get('nombre', ''))
+        if valor:
+            validar_texto_seguro(valor, 'El filtro de nombre')
         return valor
 
 

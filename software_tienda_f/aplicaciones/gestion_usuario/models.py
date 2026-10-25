@@ -42,8 +42,8 @@ class Usuario(AbstractUser):
                                                                           self.pk, self.identificacion, self.estado)
 
     def obtener_rol(self):
-        grupos = self.groups.all()
-        return grupos[0].name if grupos else None
+        nombres = self.groups.order_by('name').values_list('name', flat=True)
+        return ', '.join(nombres) or None
 
     def es_gerente(self):
         return self.groups.filter(name='Gerente').exists()

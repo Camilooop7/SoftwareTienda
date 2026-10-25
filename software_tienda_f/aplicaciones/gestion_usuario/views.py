@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib import messages
 from django.urls import reverse_lazy
+from django.shortcuts import redirect
 from django.core.exceptions import PermissionDenied
 from django.views.generic import (
     ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView,
@@ -9,12 +10,15 @@ from django.contrib.auth import views as auth_views
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import redirect_to_login
 from django.contrib.auth.signals import (
-    user_logged_in, user_logged_out, )
+    user_logged_in, user_logged_out, user_login_failed, )
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.views import PasswordChangeView
 from django.contrib.auth.models import Group
 from django.dispatch import receiver
 from .models import Usuario, Auditoria
 from .forms import (
     AuditoriaFiltroForm, UsuarioCrearForm, UsuarioActualizarForm, RolForm,
+    PerfilForm, LoginForm, UsuarioFiltroForm, CambiarContrasenaForm,
 )
 
 
@@ -63,6 +67,7 @@ class LoginView(auth_views.LoginView):
     template_name = 'loggin.html'
     redirect_authenticated_user = True
     next_page = 'perfil_actual'
+    authentication_form = LoginForm
 
 
 class LogoutView(auth_views.LogoutView):
@@ -78,10 +83,63 @@ class PerfilActualView(LoginRequiredMixin, TemplateView):
         return context
 
 
+class PerfilEditarView(LoginRequiredMixin, UpdateView):
+    model = Usuario
+    form_class = PerfilForm
+    template_name = 'perfil_editar.html'
+    success_url = reverse_lazy('perfil_actual')
+
+    def get_object(self, queryset=None):
+        return self.request.user
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        Auditoria.objects.create(usuario=self.request.user, accion=Auditoria.Accion.ACTUALIZAR,
+                                 detalle='Actualizó su perfil')
+        messages.success(self.request, 'Tus datos se actualizaron correctamente.')
+        return response
+
+
+class CambiarContrasenaView(LoginRequiredMixin, PasswordChangeView):
+    form_class = CambiarContrasenaForm
+    template_name = 'cambiar_contrasena.html'
+    success_url = reverse_lazy('perfil_actual')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        update_session_auth_hash(self.request, self.request.user)
+        Auditoria.objects.create(usuario=self.request.user, accion=Auditoria.Accion.ACTUALIZAR,
+                                 detalle='Cambió su contraseña')
+        messages.success(self.request, 'Tu contraseña se actualizó correctamente.')
+        return response
+
+
 class UsuarioListaView(LoginRequiredMixin, SoloGerenteMixin, ListView):
     model = Usuario
     template_name = 'usuario_usuarios.html'
     context_object_name = 'usuarios'
+
+    def get_queryset(self):
+        queryset = Usuario.objects.prefetch_related('groups').order_by('last_name', 'first_name')
+        self.filtro_form = UsuarioFiltroForm(self.request.GET if self.request.GET else None)
+        if self.filtro_form.is_valid():
+            datos = self.filtro_form.cleaned_data
+            if datos['rol']:
+                queryset = queryset.filter(groups=datos['rol'])
+            if datos['estado']:
+                queryset = queryset.filter(estado=datos['estado'])
+            if datos['nombre']:
+                from django.db.models import Q
+                nombre = datos['nombre']
+                queryset = queryset.filter(Q(first_name__icontains=nombre) | Q(last_name__icontains=nombre) | Q(username__icontains=nombre) | Q(email__icontains=nombre))
+        elif self.filtro_form.errors:
+            messages.error(self.request, next(iter(self.filtro_form.errors.values()))[0])
+        return queryset.distinct()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['filtro_form'] = self.filtro_form
+        return context
 
 
 class UsuarioPerfilView(LoginRequiredMixin, DetailView):
@@ -257,3 +315,47 @@ class RolEditarView(LoginRequiredMixin, SoloGerenteMixin, UpdateView):
         messages.success(self.request,
             'Rol "{0}" actualizado correctamente.'.format(self.object.name))
         return respuesta
+
+
+class RolCrearView(LoginRequiredMixin, SoloGerenteMixin, CreateView):
+    model = Group
+    form_class = RolForm
+    template_name = 'rol_editar.html'
+    success_url = reverse_lazy('roles')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        Auditoria.objects.create(usuario=self.request.user, accion=Auditoria.Accion.CREAR,
+                                 detalle='Creó el rol {0}'.format(self.object.name))
+        messages.success(self.request, 'Rol "{0}" creado correctamente.'.format(self.object.name))
+        return response
+
+
+class RolEliminarView(LoginRequiredMixin, SoloGerenteMixin, DeleteView):
+    model = Group
+    template_name = 'rol_eliminar.html'
+    success_url = reverse_lazy('roles')
+    roles_base = {'Gerente', 'Auxiliar Administrativo', 'Vendedor'}
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        nombre = self.object.name
+        cantidad = self.object.user_set.count()
+        if nombre in self.roles_base:
+            messages.error(request, 'No se puede eliminar el rol {0} porque es un rol base del sistema.'.format(nombre))
+            return redirect('roles')
+        if cantidad:
+            messages.error(request, 'No se puede eliminar el rol {0} porque tiene {1} usuario(s) asignado(s).'.format(nombre, cantidad))
+            return redirect('roles')
+        response = super().post(request, *args, **kwargs)
+        Auditoria.objects.create(usuario=request.user, accion=Auditoria.Accion.ELIMINAR,
+                                 detalle='Eliminó el rol {0}'.format(nombre))
+        messages.success(request, 'Rol "{0}" eliminado correctamente.'.format(nombre))
+        return response
+
+
+@receiver(user_login_failed)
+def auditoria_login_fallido(sender, credentials, request, **kwargs):
+    credencial = credentials.get('username') or credentials.get('email') or ''
+    Auditoria.objects.create(usuario=None, accion=Auditoria.Accion.ERROR_ACCESO,
+                             detalle='Intento fallido de acceso con {0}'.format(credencial)[:255])
