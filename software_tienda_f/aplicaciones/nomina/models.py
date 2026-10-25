@@ -78,6 +78,13 @@ class Nomina(models.Model):
         on_delete=models.CASCADE,
         related_name='nominas',
     )
+    solicitud = models.ForeignKey(
+        Solicitud,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='nominas',
+    )
     periodo = models.CharField(max_length=7)  # '2026-09'
     revisada_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,

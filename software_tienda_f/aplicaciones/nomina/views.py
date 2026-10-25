@@ -342,10 +342,13 @@ class PreNominaDetalleView(SoloAuxiliarMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         solicitud = self.object
-        nominas = Nomina.objects.filter(periodo=solicitud.periodo).select_related('usuario').order_by(
+        nominas = solicitud.nominas.select_related('usuario').order_by(
             'usuario__first_name', 'usuario__last_name')
         context.update({
             'nominas': nominas,
+            'nominas_reemplazadas': (
+                solicitud.estado == Solicitud.Estado.RECHAZADA and not nominas.exists()
+            ),
             'nombre_periodo': nombre_periodo(solicitud.periodo),
             'totales': nominas.aggregate(
                 salarios=Coalesce(Sum('salario_bruto'), Value(Decimal('0'))),

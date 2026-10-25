@@ -9,6 +9,9 @@
     Estado: {{ solicitud.get_estado_display }}
     {% if solicitud.motivo_rechazo %} — {{ solicitud.motivo_rechazo }}{% endif %}
 </p>
+{% if nominas_reemplazadas %}
+<p class="estado-vacio">Esta pre-nómina fue rechazada y sus valores se reemplazaron al recalcular el período.</p>
+{% else %}
 <table class="tabla-reporte">
     <thead>
         <tr>
@@ -50,6 +53,7 @@
         </tr>
     </tfoot>
 </table>
+{% endif %}
 {% if solicitud.estado == 'PENDIENTE' %}
 <form method="post" action="{% url 'bandeja_aprobacion' %}" class="form-accion">
     {% csrf_token %}

@@ -52,7 +52,7 @@ def calcular_horas_extra(usuario, fecha, hora_ingreso, hora_salida, motivo):
     )
 
 
-def calcular_nomina(usuario, periodo):
+def calcular_nomina(usuario, periodo, solicitud=None):
     salario_bruto = Decimal(str(usuario.salario_base))
 
     config = ConfiguracionBonificacion.objects.filter(usuario=usuario).first()
@@ -70,6 +70,7 @@ def calcular_nomina(usuario, periodo):
 
     return Nomina.objects.create(
         usuario=usuario,
+        solicitud=solicitud,
         periodo=periodo,
         salario_bruto=salario_bruto,
         valor_bonificacion=bonificacion,
@@ -94,16 +95,18 @@ def generar_prenomina(periodo, calculada_por):
     if not empleados.exists():
         raise SinEmpleadosActivosError(periodo)
 
-    nominas = [calcular_nomina(usuario, periodo) for usuario in empleados]
-    total = sum((nomina.total_pagar for nomina in nominas), Decimal('0'))
-    motivo = 'Pre-nómina {0}: {1} empleados, total {2}'.format(
-        nombre_periodo(periodo), len(nominas), formatear_moneda(total))
     solicitud = Solicitud.objects.create(
         usuario=calculada_por,
         tipo=Solicitud.Tipo.NOMINA,
         periodo=periodo,
-        motivo=motivo,
+        motivo='Pre-nómina {0}: cálculo en curso'.format(nombre_periodo(periodo)),
     )
+    nominas = [calcular_nomina(usuario, periodo, solicitud=solicitud) for usuario in empleados]
+    total = sum((nomina.total_pagar for nomina in nominas), Decimal('0'))
+    motivo = 'Pre-nómina {0}: {1} empleados, total {2}'.format(
+        nombre_periodo(periodo), len(nominas), formatear_moneda(total))
+    solicitud.motivo = motivo
+    solicitud.save(update_fields=['motivo'])
     Auditoria.objects.create(
         usuario=calculada_por,
         accion=Auditoria.Accion.CALCULAR,
@@ -127,7 +130,7 @@ def aceptar_prenomina(solicitud, auxiliar):
     solicitud.estado = Solicitud.Estado.ACEPTADA
     solicitud.save(update_fields=['estado'])
     nominas = Nomina.objects.select_for_update().filter(
-        periodo=solicitud.periodo, estado=Nomina.Estado.PENDIENTE)
+        solicitud=solicitud, estado=Nomina.Estado.PENDIENTE)
     fecha_revision = timezone.now()
     cantidad = 0
     for nomina in nominas:
@@ -160,7 +163,7 @@ def rechazar_prenomina(solicitud, auxiliar, motivo):
     solicitud.save(update_fields=['estado', 'motivo_rechazo'])
     fecha_revision = timezone.now()
     Nomina.objects.select_for_update().filter(
-        periodo=solicitud.periodo, estado=Nomina.Estado.PENDIENTE).update(
+        solicitud=solicitud, estado=Nomina.Estado.PENDIENTE).update(
             estado=Nomina.Estado.RECHAZADA,
             revisada_por=auxiliar,
             fecha_revision=fecha_revision,

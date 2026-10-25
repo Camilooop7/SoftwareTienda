@@ -205,6 +205,14 @@ class PreNominaFlujoTest(TestCase):
         self.assertEqual(solicitud.estado, Solicitud.Estado.PENDIENTE)
         self.assertEqual(Solicitud.objects.filter(
             tipo=Solicitud.Tipo.NOMINA, periodo=self.periodo).count(), 1)
+        self.assertEqual(Nomina.objects.filter(solicitud=solicitud).count(), 2)
+
+    def test_generar_asocia_todas_las_nominas_a_solicitud_devuelta(self):
+        solicitud = self._generar()
+        self.assertEqual(
+            set(Nomina.objects.filter(periodo=self.periodo).values_list('solicitud_id', flat=True)),
+            {solicitud.pk},
+        )
 
     def test_generar_dos_veces_informa_que_ya_fue_calculada(self):
         self._generar()
@@ -278,6 +286,17 @@ class PreNominaFlujoTest(TestCase):
             periodo=self.periodo, estado=Nomina.Estado.PENDIENTE).count(), 2)
         self.assertFalse(Nomina.objects.filter(
             periodo=self.periodo, estado=Nomina.Estado.RECHAZADA).exists())
+
+    def test_aceptar_solo_cambia_nominas_de_su_solicitud(self):
+        solicitud = self._generar()
+        otras = [calcular_nomina(u, '2026-08') for u in self.empleados]
+        cantidad = aceptar_prenomina(solicitud, self.auxiliar)
+        self.assertEqual(cantidad, 2)
+        self.assertTrue(all(n.estado == Nomina.Estado.ACEPTADA for n in
+                            Nomina.objects.filter(solicitud=solicitud)))
+        for nomina in otras:
+            nomina.refresh_from_db()
+            self.assertEqual(nomina.estado, Nomina.Estado.PENDIENTE)
 
     def test_sin_empleados_activos(self):
         Usuario.objects.filter(is_active=True).update(is_active=False)
@@ -480,6 +499,27 @@ class PreNominaIntegracionViewTest(TestCase):
         self.client.force_login(self.gerente)
         self.assertEqual(self.client.post(reverse('calculo_nomina'), {'periodo': self.periodo}).status_code, 302)
         self.assertEqual(Nomina.objects.filter(periodo=self.periodo, estado=Nomina.Estado.PENDIENTE).count(), 4)
+
+    def test_detalle_rechazado_no_muestra_lote_recalculado(self):
+        self._calcular()
+        vieja = Solicitud.objects.get(tipo=Solicitud.Tipo.NOMINA, periodo=self.periodo)
+        self.client.force_login(self.auxiliar)
+        self.client.post(reverse('bandeja_aprobacion'), {
+            'solicitud_id': vieja.pk, 'accion': 'rechazar', 'motivo_rechazo': 'Datos errados'})
+        self.empleado.salario_base = Decimal('2000000')
+        self.empleado.save(update_fields=['salario_base'])
+        self.client.force_login(self.gerente)
+        self.client.post(reverse('calculo_nomina'), {'periodo': self.periodo})
+        nueva = Solicitud.objects.exclude(pk=vieja.pk).get(
+            tipo=Solicitud.Tipo.NOMINA, periodo=self.periodo)
+        detalle_url = reverse('prenomina_detalle', args=[vieja.pk])
+        self.client.force_login(self.auxiliar)
+        respuesta_vieja = self.client.get(detalle_url)
+        self.assertContains(respuesta_vieja, 'se reemplazaron')
+        self.assertNotContains(respuesta_vieja, '$1.840.000')
+        respuesta_nueva = self.client.get(reverse('prenomina_detalle', args=[nueva.pk]))
+        self.assertContains(respuesta_nueva, 'Empleada Prueba')
+        self.assertContains(respuesta_nueva, '$1.840.000')
 
     def test_nomina_pendiente_no_expone_montos_y_error_de_periodo(self):
         self._calcular()
