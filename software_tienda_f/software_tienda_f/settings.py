@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 from pathlib import Path
+import sys
 import os
 from dotenv import load_dotenv
 from urllib.parse import urlparse, parse_qsl
@@ -92,7 +93,8 @@ TEMPLATES = [
             'context_processors': [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',],
+                'django.contrib.messages.context_processors.messages',
+                'aplicaciones.nomina.context_processors.notificacion_global',],
         },
     },
 ]
@@ -141,7 +143,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Bogota'
 
 USE_I18N = True
 
@@ -155,6 +157,10 @@ STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
+
+# Durante `manage.py test` no existe el manifest de collectstatic
+if len(sys.argv) > 1 and sys.argv[1] == 'test':
+    STORAGES["staticfiles"] = {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}
 
 
 # Email

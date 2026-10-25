@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.contrib.messages.context_processors import messages
+from django.contrib import messages
 from django.urls import reverse_lazy
 from django.core.exceptions import PermissionDenied
 from django.views.generic import (
@@ -28,14 +28,30 @@ class SoloGerenteMixin:
 class SoloAuxiliarMixin(LoginRequiredMixin):
     """Auxiliar Administrativo: bandeja de aprobación y nómina."""
     def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
         if not request.user.groups.filter(name='Auxiliar Administrativo').exists():
             raise PermissionDenied('Solo el Auxiliar Administrativo puede acceder.')
+        return super().dispatch(request, *args, **kwargs)
+
+
+class SoloGerenteOAuxiliarMixin(LoginRequiredMixin):
+    """Permite el acceso a reportes al Gerente o al Auxiliar Administrativo."""
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        if not request.user.groups.filter(
+                name__in=['Gerente', 'Auxiliar Administrativo']).exists():
+            raise PermissionDenied(
+                'Solo el Gerente o el Auxiliar Administrativo pueden ver los reportes.')
         return super().dispatch(request, *args, **kwargs)
 
 
 class SoloNominaMixin(LoginRequiredMixin):
     """Los tres roles entran a consultar su nómina propia."""
     def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
         if not request.user.groups.exists():
             raise PermissionDenied('Necesitas un rol asignado para consultar la nómina.')
         return super().dispatch(request, *args, **kwargs)
@@ -83,9 +99,10 @@ class UsuarioCrearView(LoginRequiredMixin, SoloGerenteMixin, CreateView):
         Auditoria.objects.create(
             usuario=self.request.user,
             accion=Auditoria.Accion.CREAR,
-            entidad='Usuario #{0} ({1})'.format(self.object.pk, self.object.username),
-            detalle='Creó el usuario {0}'.format(self.object.get_full_name() or self.object.username),
+            detalle='Creó el usuario {0} (#{1})'.format(
+                self.object.get_full_name() or self.object.username, self.object.pk),
         )
+        messages.success(self.request, 'Usuario {0} creado correctamente.'.format(self.object.username))
         return respuesta
 
 
@@ -102,6 +119,7 @@ class UsuarioActualizarView(LoginRequiredMixin, SoloGerenteMixin, UpdateView):
             accion=Auditoria.Accion.ACTUALIZAR,
             detalle='Editó datos de {0}'.format(self.object.username),
         )
+        messages.success(self.request, 'Usuario {0} actualizado correctamente.'.format(self.object.username))
         return respuesta
 
 
@@ -110,15 +128,15 @@ class UsuarioEliminarView(LoginRequiredMixin, SoloGerenteMixin, DeleteView):
     template_name = 'usuario_eliminar.html'
     success_url = reverse_lazy('usuario_usuarios')
 
-    def delete(self, request, *args, **kwargs):
-        usuario_eliminado = self.get_object()
-        nombre = usuario_eliminado.username
-        respuesta = super().delete(request, *args, **kwargs)
+    def form_valid(self, form):
+        nombre = self.object.username
+        respuesta = super().form_valid(form)
         Auditoria.objects.create(
-            usuario=request.user,
+            usuario=self.request.user,
             accion=Auditoria.Accion.ELIMINAR,
             detalle='Eliminó a {0}'.format(nombre),
         )
+        messages.success(self.request, 'Usuario {0} eliminado correctamente.'.format(nombre))
         return respuesta
 
 
@@ -222,6 +240,6 @@ class RolEditarView(LoginRequiredMixin, SoloGerenteMixin, UpdateView):
                 self.object.name,
                 self.object.permissions.count()),
         )
-        messages().success(self.request,
+        messages.success(self.request,
             'Rol "{0}" actualizado correctamente.'.format(self.object.name))
         return respuesta

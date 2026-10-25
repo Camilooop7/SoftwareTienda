@@ -1,19 +1,66 @@
 from datetime import date
 from decimal import Decimal
 from django.contrib import messages
+from django.http import HttpResponse
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse, reverse_lazy
-from django.views.generic import TemplateView, ListView, FormView, UpdateView
+from django.views.generic import TemplateView, ListView, FormView, UpdateView, View
 from ..gestion_usuario.models import Auditoria, Usuario
-from ..gestion_usuario.views import SoloGerenteMixin, SoloAuxiliarMixin, SoloNominaMixin
+from ..gestion_usuario.views import (
+    SoloGerenteMixin, SoloAuxiliarMixin, SoloNominaMixin, SoloGerenteOAuxiliarMixin,
+)
 from .models import Nomina, HoraExtra, Solicitud, ConfiguracionBonificacion, Notificacion
 from .forms import HoraExtraForm, SolicitudForm, SolicitudAprobarForm, BonificacionForm, NotificacionForm, \
     SolicitudVacacionesForm
+from .forms import ReporteFiltroForm
+from .reportes import resumen_mensual
 from .services import calcular_horas_extra, calcular_nomina
+from .pdf import generar_pdf_reporte
 
 
 def periodo_actual():
     return date.today().strftime('%Y-%m')
+
+
+class ReporteMensualView(SoloGerenteOAuxiliarMixin, TemplateView):
+    template_name = 'reporte_mensual.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        form = ReporteFiltroForm(self.request.GET or {'periodo': periodo_actual()})
+        if form.is_valid():
+            periodo = form.cleaned_data['periodo']
+        else:
+            periodo = periodo_actual()
+            messages.error(self.request, form.errors['periodo'][0])
+        context.update({
+            'form': form,
+            'resumen': resumen_mensual(periodo),
+            'periodo': periodo,
+        })
+        return context
+
+
+class ReporteMensualPDFView(SoloGerenteOAuxiliarMixin, View):
+    def get(self, request, *args, **kwargs):
+        form = ReporteFiltroForm(request.GET or {'periodo': periodo_actual()})
+        if not form.is_valid():
+            messages.error(request, form.errors['periodo'][0])
+            return redirect('reporte_mensual')
+
+        periodo = form.cleaned_data['periodo']
+        resumen = resumen_mensual(periodo)
+        pdf = generar_pdf_reporte(resumen, request.user)
+        Auditoria.objects.create(
+            usuario=request.user,
+            accion=Auditoria.Accion.EXPORTAR,
+            detalle='Exportó el reporte de nómina de {0} en PDF'.format(resumen['nombre_periodo']),
+        )
+        respuesta = HttpResponse(pdf, content_type='application/pdf')
+        respuesta['Content-Disposition'] = 'attachment; filename="reporte_nomina_{0}.pdf"'.format(periodo)
+        return respuesta
+
+
 class NominaConsultarView(SoloNominaMixin, TemplateView):
     template_name = 'nomina_consultar.html'
 

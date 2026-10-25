@@ -66,6 +66,11 @@ class Solicitud(models.Model):
 
 
 class Nomina(models.Model):
+    class Estado(models.TextChoices):
+        PENDIENTE = 'PENDIENTE', 'Pendiente'
+        ACEPTADA = 'ACEPTADA', 'Aceptada'
+        RECHAZADA = 'RECHAZADA', 'Rechazada'
+
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -76,6 +81,9 @@ class Nomina(models.Model):
     valor_bonificacion = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     valor_horas_extra = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     deducciones = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    estado = models.CharField(max_length=10, choices=Estado.choices, default=Estado.PENDIENTE)
+    deduccion_salud = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    deduccion_pension = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     total_pagar = models.DecimalField(max_digits=14, decimal_places=2)
 
     class Meta:

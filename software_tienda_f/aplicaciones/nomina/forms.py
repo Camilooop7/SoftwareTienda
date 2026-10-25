@@ -1,6 +1,36 @@
+import re
+from datetime import date
+
 from django import forms
 from .models import HoraExtra, Solicitud, ConfiguracionBonificacion, Notificacion
 from ..gestion_usuario.models import Usuario
+
+
+class ReporteFiltroForm(forms.Form):
+    periodo = forms.CharField(
+        widget=forms.TextInput(attrs={'type': 'month', 'min': '2020-01'}),
+        label='Período',
+        error_messages={'required': 'Selecciona un período para generar el reporte.'},
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['periodo'].widget.attrs['max'] = date.today().strftime('%Y-%m')
+
+    def clean_periodo(self):
+        periodo = self.cleaned_data.get('periodo', '')
+        if not periodo:
+            raise forms.ValidationError('Selecciona un período para generar el reporte.')
+        if not re.fullmatch(r'\d{4}-\d{2}', periodo):
+            raise forms.ValidationError('El período debe tener el formato AAAA-MM (ej: 2026-09).')
+        ano, mes = (int(parte) for parte in periodo.split('-'))
+        if not 1 <= mes <= 12:
+            raise forms.ValidationError('El mes debe estar entre 01 y 12.')
+        if ano < 2020:
+            raise forms.ValidationError('No hay reportes anteriores a enero de 2020.')
+        if (ano, mes) > (date.today().year, date.today().month):
+            raise forms.ValidationError('No se puede generar el reporte de un mes futuro.')
+        return '{0:04d}-{1:02d}'.format(ano, mes)
 
 class HoraExtraForm(forms.Form):
     usuario = forms.ModelChoiceField(queryset=Usuario.objects.all(), label='Trabajador')
@@ -67,3 +97,4 @@ class NotificacionForm(forms.ModelForm):
         model = Notificacion
         fields = ['titulo', 'contenido', 'activa']
         labels = {'titulo': 'Título', 'contenido': 'Contenido', 'activa': 'Mostrar a todos'}
+        widgets = {'contenido': forms.Textarea(attrs={'rows': 4})}

@@ -39,6 +39,7 @@ class Auditoria(models.Model):
         SALIR = 'SALIR', 'Salir'
         ERROR_ACCESO = 'ERROR_ACCESO', 'Intento fallido de acceso'
         CALCULAR = 'CALCULAR', 'Cálculo de nómina'
+        EXPORTAR = 'EXPORTAR', 'Exportar reporte'
 
     usuario = models.ForeignKey(Usuario, on_delete=models.SET_NULL,null=True,related_name='auditorias')
     accion = models.CharField(max_length=20, choices=Accion.choices)
@@ -53,7 +54,7 @@ class Auditoria(models.Model):
 
     def __str__(self):
         return '{0} - {1} ({2})'.format(
-            self.usuario, self.get_accion_display(), self.entidad
+            self.usuario, self.get_accion_display(), self.detalle
         )
 
 

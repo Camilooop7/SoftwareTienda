@@ -7,7 +7,9 @@ HORA_INICIO_DIURNA = 6
 HORA_FIN_DIURNA = 19
 PCT_HORA_DIURNA = Decimal('0.006')
 PCT_HORA_NOCTURNA = Decimal('0.008')
-PCT_DEDUCCIONES = Decimal('0.08')
+PCT_SALUD = Decimal('0.04')
+PCT_PENSION = Decimal('0.04')
+PCT_DEDUCCIONES = PCT_SALUD + PCT_PENSION
 
 
 def calcular_horas_extra(usuario, fecha, hora_ingreso, hora_salida, motivo):
@@ -52,7 +54,9 @@ def calcular_nomina(usuario, periodo):
     horas_extra = HoraExtra.objects.filter(usuario=usuario, periodo=periodo)
     total_horas = sum((h.valor for h in horas_extra), Decimal('0'))
 
-    deducciones = (salario_bruto * PCT_DEDUCCIONES).quantize(Decimal('0'))
+    salud = (salario_bruto * PCT_SALUD).quantize(Decimal('0'))
+    pension = (salario_bruto * PCT_PENSION).quantize(Decimal('0'))
+    deducciones = salud + pension
     total = salario_bruto + bonificacion + total_horas - deducciones
 
     nomina, creado = Nomina.objects.update_or_create(
@@ -63,6 +67,8 @@ def calcular_nomina(usuario, periodo):
             'valor_bonificacion': bonificacion,
             'valor_horas_extra': total_horas,
             'deducciones': deducciones,
+            'deduccion_salud': salud,
+            'deduccion_pension': pension,
             'total_pagar': total,
         },
     )

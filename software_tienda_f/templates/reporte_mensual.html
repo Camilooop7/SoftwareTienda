@@ -1,0 +1,71 @@
+{% extends 'index.html' %}
+{% load formatos %}
+{% block titulo %}Reporte mensual de nómina{% endblock %}
+{% block mod_reportes %}abierto{% endblock %}
+{% block menu_reporte_mensual %}activo{% endblock %}
+{% block encabezado %}Reporte mensual de nómina{% endblock %}
+
+{% block contenido %}
+<form method="get" class="filtros-auditoria">
+    <div class="filtro filtro--fecha">
+        <span class="filtro-titulo">Período</span>
+        {{ form.periodo }}
+        {{ form.periodo.errors }}
+    </div>
+    <div class="filtros-acciones">
+        <button type="submit" class="btn btn-morado">Ver reporte</button>
+        <a href="{% url 'reporte_mensual' %}" class="btn btn-linea">Mes actual</a>
+        <a href="{% url 'reporte_mensual_pdf' %}?periodo={{ periodo }}" class="btn btn-linea">Descargar PDF</a>
+    </div>
+</form>
+
+<div class="reporte-subtitulo">
+    <h2>{{ resumen.nombre_periodo }}</h2>
+    <p>Solo incluye nóminas aceptadas por el administrador.</p>
+</div>
+
+<div class="fichas">
+    <div class="ficha ficha--violeta"><span class="valor">{{ resumen.total_pagado|moneda }}</span><span class="etiqueta">Total pagado</span></div>
+    <div class="ficha ficha--rosa"><span class="valor">{{ resumen.total_salud|moneda }}</span><span class="etiqueta">Salud 4%</span></div>
+    <div class="ficha ficha--cian"><span class="valor">{{ resumen.total_pension|moneda }}</span><span class="etiqueta">Pensión 4%</span></div>
+    <div class="ficha ficha--navy"><span class="valor">{{ resumen.empleados }}</span><span class="etiqueta">Empleados</span></div>
+</div>
+
+<section class="distribucion">
+    <h3>Distribución del pago</h3>
+    {% if resumen.empleados %}
+    <div class="barra-distribucion" role="img" aria-label="Distribución de total pagado, salud y pensión">
+        <span class="barra-seg--neto" style="width: {{ resumen.pct_neto|stringformat:'s' }}%"></span>
+        <span class="barra-seg--salud" style="width: {{ resumen.pct_salud|stringformat:'s' }}%"></span>
+        <span class="barra-seg--pension" style="width: {{ resumen.pct_pension|stringformat:'s' }}%"></span>
+    </div>
+    <div class="leyenda-distribucion">
+        <div><span class="leyenda-color barra-seg--neto"></span><span>Total pagado: {{ resumen.total_pagado|moneda }} ({{ resumen.pct_neto }}%)</span></div>
+        <div><span class="leyenda-color barra-seg--salud"></span><span>Salud: {{ resumen.total_salud|moneda }} ({{ resumen.pct_salud }}%)</span></div>
+        <div><span class="leyenda-color barra-seg--pension"></span><span>Pensión: {{ resumen.total_pension|moneda }} ({{ resumen.pct_pension }}%)</span></div>
+    </div>
+    {% else %}
+    <p class="estado-vacio">No hay nóminas aceptadas para {{ resumen.nombre_periodo }}.</p>
+    {% endif %}
+</section>
+
+<table class="tabla-reporte">
+    <thead><tr><th>Empleado</th><th>Salario base</th><th>Bonificación</th><th>Horas extra</th><th>Salud (4%)</th><th>Pensión (4%)</th><th>Total pagado</th></tr></thead>
+    <tbody>
+    {% for nomina in resumen.nominas %}
+    <tr>
+        <td>{{ nomina.usuario.get_full_name|default:nomina.usuario.username }}</td>
+        <td class="monto">{{ nomina.salario_bruto|moneda }}</td>
+        <td class="monto">{{ nomina.valor_bonificacion|moneda }}</td>
+        <td class="monto">{{ nomina.valor_horas_extra|moneda }}</td>
+        <td class="monto">{{ nomina.deduccion_salud|moneda }}</td>
+        <td class="monto">{{ nomina.deduccion_pension|moneda }}</td>
+        <td class="monto">{{ nomina.total_pagar|moneda }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="7">No hay nóminas aceptadas para este período.</td></tr>
+    {% endfor %}
+    </tbody>
+    <tfoot><tr class="fila-total"><td>Totales</td><td class="monto">{{ resumen.total_salarios|moneda }}</td><td class="monto">{{ resumen.total_bonificaciones|moneda }}</td><td class="monto">{{ resumen.total_horas_extra|moneda }}</td><td class="monto">{{ resumen.total_salud|moneda }}</td><td class="monto">{{ resumen.total_pension|moneda }}</td><td class="monto">{{ resumen.total_pagado|moneda }}</td></tr></tfoot>
+</table>
+{% endblock %}
