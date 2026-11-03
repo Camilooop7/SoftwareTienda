@@ -163,9 +163,11 @@ STORAGES = {
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 
-# Durante `manage.py test` y `manage.py plan_pruebas` no existe el manifest de collectstatic
-if len(sys.argv) > 1 and sys.argv[1] in ('test', 'plan_pruebas'):
+# Durante `manage.py test`, `plan_pruebas` y `runserver` no existe el manifest de collectstatic
+if len(sys.argv) > 1 and sys.argv[1] in ('test', 'plan_pruebas', 'runserver'):
     STORAGES["staticfiles"] = {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}
+    # En local WhiteNoise sirve el CSS directamente desde STATICFILES_DIRS
+    WHITENOISE_USE_FINDERS = True
 
 
 # Email
